@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blueline — AI Data Lineage for SSAS Modernization</title>
+  <meta name="description" content="Paste SQL, DAX, or Power Query source and Blueline traces table- and column-level data lineage, answers questions about it, and generates documentation and impact-analysis reports." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="titleblock">
+      <div class="titleblock__brand">
+        <span class="titleblock__mark" aria-hidden="true">⌗</span>
+        <span>BLUELINE</span>
+      </div>
+      <div class="titleblock__meta">DATA LINEAGE FOR SSAS MODERNIZATION</div>
+      <div class="titleblock__stamp">
+        <span id="graphStamp">NO LINEAGE DRAWN</span>
+      </div>
+    </header>
+
+    <div class="app__body">
+      <!-- Sources -->
+      <aside class="sidebar sidebar--sources" aria-label="Sources">
+        <h2 class="panel__title">Sources</h2>
+        <p class="panel__hint">Paste or upload SQL, DAX, or Power Query (M). Blueline traces lineage from what's here.</p>
+
+        <ul id="sourceList" class="source-list" aria-label="Added sources"></ul>
+
+        <form id="sourceForm" class="source-form">
+          <label class="field">
+            <span class="field__label">Name</span>
+            <input type="text" id="sourceName" placeholder="e.g. FactSales.sql" maxlength="200" />
+          </label>
+          <label class="field">
+            <span class="field__label">Dialect</span>
+            <select id="sourceDialect">
+              <option value="sql">SQL</option>
+              <option value="dax">DAX</option>
+              <option value="m">Power Query (M)</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">Query text</span>
+            <textarea id="sourceContent" rows="7" placeholder="Paste a query here, or drop a file below"></textarea>
+          </label>
+          <label class="btn btn--ghost btn--block file-btn">
+            <span>Upload file(s)</span>
+            <input type="file" id="sourceFile" multiple accept=".sql,.dax,.m,.txt" class="file-input" />
+          </label>
+          <button type="submit" class="btn btn--ghost btn--block">+ Add source</button>
+        </form>
+
+        <button id="inferBtn" class="btn btn--primary btn--block" disabled>Infer lineage</button>
+        <p id="inferStatus" class="status-line" role="status"></p>
+      </aside>
+
+      <!-- Graph canvas -->
+      <main class="canvas-wrap">
+        <div class="canvas-toolbar">
+          <div class="canvas-toolbar__group">
+            <button id="fitBtn" class="btn btn--icon" title="Fit graph to view" disabled>⤢</button>
+            <button id="clearHighlightBtn" class="btn btn--icon" title="Clear highlight" disabled>✕</button>
+          </div>
+          <div class="canvas-toolbar__group">
+            <button id="exportJsonBtn" class="btn btn--ghost" disabled>Export JSON</button>
+            <button id="exportCsvBtn" class="btn btn--ghost" disabled>Export CSV</button>
+            <button id="exportPngBtn" class="btn btn--ghost" disabled>Export PNG</button>
+            <label class="btn btn--ghost file-btn">
+              <span>Import JSON</span>
+              <input type="file" id="importInput" accept="application/json" class="file-input" />
+            </label>
+          </div>
+        </div>
+
+        <div id="graphCanvas" class="graph-canvas" role="img" aria-label="Data lineage graph"></div>
+
+        <div id="emptyState" class="empty-state">
+          <p class="empty-state__title">No lineage drawn yet</p>
+          <p class="empty-state__body">Add a source query on the left and click "Infer lineage," or import a saved graph.</p>
+        </div>
+
+        <div class="legend" aria-hidden="true">
+          <span class="legend__item"><i class="legend__swatch legend__swatch--high"></i>Confirmed</span>
+          <span class="legend__item"><i class="legend__swatch legend__swatch--medium"></i>Medium confidence</span>
+          <span class="legend__item"><i class="legend__swatch legend__swatch--low"></i>Low confidence</span>
+        </div>
+      </main>
+
+      <!-- Inspector / Ask / Report -->
+      <aside class="sidebar sidebar--inspector" aria-label="Inspector, Ask AI, and Reports">
+        <div class="tabs" role="tablist">
+          <button class="tab is-active" data-tab="inspector" role="tab" aria-selected="true">Inspect</button>
+          <button class="tab" data-tab="ask" role="tab" aria-selected="false">Ask AI</button>
+          <button class="tab" data-tab="report" role="tab" aria-selected="false">Reports</button>
+        </div>
+
+        <div class="tab-panel is-active" data-tab-panel="inspector">
+          <div id="inspectorContent" class="inspector">
+            <p class="empty-hint">Click a node in the graph to inspect its upstream and downstream lineage.</p>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="ask">
+          <div id="chatLog" class="chat-log" role="log" aria-live="polite">
+            <p class="empty-hint">Ask a question about the current lineage graph — e.g. "what feeds TotalRevenue?"</p>
+          </div>
+          <form id="chatForm" class="chat-form">
+            <textarea id="chatInput" rows="2" placeholder="Ask about this lineage graph…" maxlength="1000"></textarea>
+            <button type="submit" class="btn btn--primary">Ask</button>
+          </form>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="report">
+          <div class="report-actions">
+            <button id="docReportBtn" class="btn btn--ghost btn--block" disabled>Generate documentation</button>
+            <button id="impactReportBtn" class="btn btn--ghost btn--block" disabled>Generate impact analysis</button>
+          </div>
+          <p id="reportStatus" class="status-line" role="status"></p>
+          <div id="reportOutput" class="report-output"></div>
+          <button id="downloadReportBtn" class="btn btn--ghost btn--block" hidden>Download report (.md)</button>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="app-footer">
+      <span>Blueline — created by Bernadino T. Domongdong</span>
+      <a href="https://bernadinodomongdong.github.io/mysite/" target="_blank" rel="noopener">bernadinodomongdong.github.io/mysite</a>
+    </footer>
+  </div>
+
+  <div id="toastRegion" class="toast-region" aria-live="assertive"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
