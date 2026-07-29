@@ -2,14 +2,16 @@
  * api/ask.js — Vercel serverless function.
  *
  * Answers natural-language questions about the lineage graph currently
- * loaded in the browser. The graph is sent up with each question rather
- * than stored server-side — this app keeps no database, by design (see
- * README) — so answers are only as fresh as the graph the client sends.
+ * loaded in the browser, using whichever LLM provider is configured
+ * (see lib/llmClient.js / .env.example). The graph is sent up with each
+ * question rather than stored server-side — this app keeps no database,
+ * by design (see README) — so answers are only as fresh as the graph
+ * the client sends.
  */
 
 'use strict';
 
-const { callClaude, ClaudeConfigError, ClaudeUpstreamError } = require('../lib/claudeClient');
+const { callLLM, LLMConfigError, LLMUpstreamError } = require('../lib/llmClient');
 const { buildAskPrompt } = require('../lib/prompts');
 const { validateAndNormalizeGraph, GraphValidationError } = require('../lib/validateGraph');
 const { checkRateLimit, clientKeyFromRequest, ensureSweepScheduled } = require('../lib/rateLimit');
@@ -75,7 +77,7 @@ module.exports = async function handler(req, res) {
   try {
     const { graph } = validateAndNormalizeGraph(req.body?.graph);
     const { system, userContent } = buildAskPrompt(question, graph);
-    const answer = await callClaude({
+    const answer = await callLLM({
       system,
       messages: [{ role: 'user', content: userContent }],
       maxTokens: 1200,
@@ -87,11 +89,11 @@ module.exports = async function handler(req, res) {
       res.status(400).json({ error: `"graph" isn't a valid lineage graph: ${err.message}` });
       return;
     }
-    if (err instanceof ClaudeConfigError) {
+    if (err instanceof LLMConfigError) {
       res.status(500).json({ error: err.message });
       return;
     }
-    if (err instanceof ClaudeUpstreamError) {
+    if (err instanceof LLMUpstreamError) {
       res.status(err.status).json({ error: err.message });
       return;
     }

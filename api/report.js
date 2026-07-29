@@ -2,15 +2,16 @@
  * api/report.js — Vercel serverless function.
  *
  * Generates a Markdown documentation or impact-analysis report from the
- * lineage graph currently loaded in the browser. Upstream/downstream
- * traversal is computed here, deterministically, and handed to Claude
- * as grounding data — the model writes prose, it doesn't re-derive
- * graph structure.
+ * lineage graph currently loaded in the browser, using whichever LLM
+ * provider is configured (see lib/llmClient.js / .env.example).
+ * Upstream/downstream traversal is computed here, deterministically,
+ * and handed to the model as grounding data — it writes prose, it
+ * doesn't re-derive graph structure.
  */
 
 'use strict';
 
-const { callClaude, ClaudeConfigError, ClaudeUpstreamError } = require('../lib/claudeClient');
+const { callLLM, LLMConfigError, LLMUpstreamError } = require('../lib/llmClient');
 const { buildReportPrompt } = require('../lib/prompts');
 const { validateAndNormalizeGraph, computeImpact, GraphValidationError } = require('../lib/validateGraph');
 const { checkRateLimit, clientKeyFromRequest, ensureSweepScheduled } = require('../lib/rateLimit');
@@ -77,7 +78,7 @@ module.exports = async function handler(req, res) {
     }
     const impact = computeImpact(graph);
     const { system, userContent } = buildReportPrompt(reportType, graph, impact);
-    const markdown = await callClaude({
+    const markdown = await callLLM({
       system,
       messages: [{ role: 'user', content: userContent }],
       maxTokens: 6000,
@@ -89,11 +90,11 @@ module.exports = async function handler(req, res) {
       res.status(400).json({ error: `"graph" isn't a valid lineage graph: ${err.message}` });
       return;
     }
-    if (err instanceof ClaudeConfigError) {
+    if (err instanceof LLMConfigError) {
       res.status(500).json({ error: err.message });
       return;
     }
-    if (err instanceof ClaudeUpstreamError) {
+    if (err instanceof LLMUpstreamError) {
       res.status(err.status).json({ error: err.message });
       return;
     }

@@ -10,6 +10,12 @@ const NODE_TYPES = new Set(['table', 'view', 'column', 'measure']);
 const EDGE_TYPES = new Set(['direct', 'derived', 'aggregated', 'filtered']);
 const CONFIDENCE_LEVELS = new Set(['high', 'medium', 'low']);
 
+// Same values, as ordered arrays — for populating <select> options in
+// the manual-edit forms (editMode.js) without duplicating the list.
+export const NODE_TYPE_OPTIONS = Array.from(NODE_TYPES);
+export const EDGE_TYPE_OPTIONS = Array.from(EDGE_TYPES);
+export const CONFIDENCE_OPTIONS = Array.from(CONFIDENCE_LEVELS);
+
 /**
  * @param {any} raw
  * @returns {{ nodes: Array, edges: Array, metadata: Object }}
@@ -25,12 +31,15 @@ export function normalizeGraph(raw) {
     if (!n || typeof n.id !== 'string' || !n.id.trim() || seenIds.has(n.id)) continue;
     const id = n.id.trim();
     seenIds.add(id);
+    const hasValidPosition =
+      n.position && typeof n.position === 'object' && Number.isFinite(n.position.x) && Number.isFinite(n.position.y);
     nodes.push({
       id,
       label: typeof n.label === 'string' && n.label.trim() ? n.label.trim() : id,
       type: NODE_TYPES.has(n.type) ? n.type : 'table',
       description: typeof n.description === 'string' ? n.description : '',
       confidence: CONFIDENCE_LEVELS.has(n.confidence) ? n.confidence : 'high',
+      ...(hasValidPosition ? { position: { x: n.position.x, y: n.position.y } } : {}),
     });
   }
 

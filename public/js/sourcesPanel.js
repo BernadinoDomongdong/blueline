@@ -103,8 +103,15 @@ export class SourcesPanel {
   }
 
   async _handleInfer() {
-    const { sources } = this.store.get();
+    const { sources, graph } = this.store.get();
     if (sources.length === 0) return;
+
+    if (graph.nodes.length > 0) {
+      const proceed = window.confirm(
+        `This will replace the current diagram (${graph.nodes.length} nodes, ${graph.edges.length} edges) with freshly-inferred lineage. Any manual edits will be lost. Continue?`
+      );
+      if (!proceed) return;
+    }
 
     this.inferBtn.disabled = true;
     this._setStatus('Tracing lineage…', 'working');

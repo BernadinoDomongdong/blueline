@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blueline — AI Data Lineage for SSAS Modernization</title>
-  <meta name="description" content="Paste SQL, DAX, or Power Query source and Blueline traces table- and column-level data lineage, answers questions about it, and generates documentation and impact-analysis reports." />
+  <meta name="description" content="Paste SQL, DAX, or Power Query source and Blueline traces table- and column-level data lineage — or build the diagram by hand — answers questions about it, and generates documentation and impact-analysis reports." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,6 +71,15 @@
             <button id="clearHighlightBtn" class="btn btn--icon" title="Clear highlight" disabled>✕</button>
           </div>
           <div class="canvas-toolbar__group">
+            <button id="editModeToggle" class="btn btn--ghost" aria-pressed="false" title="Add, connect, and delete nodes by hand">✎ Edit diagram</button>
+            <span id="editToolGroup" class="canvas-toolbar__group" hidden>
+              <button id="addNodeBtn" class="btn btn--ghost" title="Add a node">+ Node</button>
+              <button id="addEdgeBtn" class="btn btn--ghost" title="Add an edge by choosing source and target" disabled>+ Edge</button>
+              <button id="connectModeBtn" class="btn btn--ghost" aria-pressed="false" title="Drag from one node to another to connect them">⤳ Connect</button>
+              <button id="deleteElementBtn" class="btn btn--ghost" title="Delete the selected node or edge" disabled>Delete</button>
+            </span>
+          </div>
+          <div class="canvas-toolbar__group">
             <button id="exportJsonBtn" class="btn btn--ghost" disabled>Export JSON</button>
             <button id="exportCsvBtn" class="btn btn--ghost" disabled>Export CSV</button>
             <button id="exportPngBtn" class="btn btn--ghost" disabled>Export PNG</button>
@@ -81,11 +90,16 @@
           </div>
         </div>
 
+        <p id="editModeHint" class="edit-mode-hint" hidden>
+          Editing on — drag a node to reposition it, double-click a node or edge to change it, or use Connect to drag a link between two nodes.
+        </p>
+
         <div id="graphCanvas" class="graph-canvas" role="img" aria-label="Data lineage graph"></div>
 
         <div id="emptyState" class="empty-state">
           <p class="empty-state__title">No lineage drawn yet</p>
-          <p class="empty-state__body">Add a source query on the left and click "Infer lineage," or import a saved graph.</p>
+          <p class="empty-state__body">Add a source query on the left and click "Infer lineage," import a saved graph, or build one by hand.</p>
+          <button id="emptyStateManualBtn" class="btn btn--ghost">+ Start a manual diagram</button>
         </div>
 
         <div class="legend" aria-hidden="true">
@@ -133,13 +147,25 @@
 
     <footer class="app-footer">
       <span>Blueline — created by Bernadino T. Domongdong</span>
+      <span id="modelStamp" class="app-footer__model"></span>
       <a href="https://bernadinodomongdong.github.io/mysite/" target="_blank" rel="noopener">bernadinodomongdong.github.io/mysite</a>
     </footer>
+  </div>
+
+  <div id="editModal" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <div class="modal__header">
+        <h3 id="editModalTitle">Edit</h3>
+        <button type="button" id="editModalClose" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+      <div id="editModalBody" class="modal__body"></div>
+    </div>
   </div>
 
   <div id="toastRegion" class="toast-region" aria-live="assertive"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-edgehandles@4.0.1/cytoscape-edgehandles.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>

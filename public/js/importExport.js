@@ -59,7 +59,12 @@ export class ImportExport {
   _exportJson() {
     const { graph } = this.store.get();
     if (!graph.nodes.length) return;
-    downloadBlob(JSON.stringify(graph, null, 2), `blueline-lineage-${Date.now()}.json`, 'application/json');
+    // Pulled live from the canvas (not straight from state) so that any
+    // manual repositioning — dragging nodes around after AI inference,
+    // import, or manual editing — is captured in the export too.
+    const snapshot = this.graphView.getGraphSnapshot();
+    const exported = { ...snapshot, metadata: graph.metadata };
+    downloadBlob(JSON.stringify(exported, null, 2), `blueline-lineage-${Date.now()}.json`, 'application/json');
     showToast('Lineage graph exported as JSON.');
   }
 
@@ -94,6 +99,15 @@ export class ImportExport {
       const text = await file.text();
       const raw = JSON.parse(text);
       const graph = normalizeGraph(raw);
+
+      const current = this.store.get().graph;
+      if (current.nodes.length > 0) {
+        const proceed = window.confirm(
+          `This will replace the current diagram (${current.nodes.length} nodes, ${current.edges.length} edges) with the imported file. Continue?`
+        );
+        if (!proceed) return;
+      }
+
       this.store.set({ graph });
       this.onImported(graph);
       showToast(`Imported ${graph.nodes.length} nodes, ${graph.edges.length} edges.`);

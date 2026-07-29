@@ -1,14 +1,16 @@
 /**
  * api/infer-lineage.js — Vercel serverless function.
  *
- * Takes the source queries a person has pasted/uploaded and asks Claude
- * to extract table/column-level lineage from them. Runs only on
- * Vercel's servers — ANTHROPIC_API_KEY never reaches the browser.
+ * Takes the source queries a person has pasted/uploaded and asks the
+ * configured LLM (see lib/llmClient.js / .env.example — OpenRouter by
+ * default, or a direct/custom/local model) to extract table/column-
+ * level lineage from them. Runs only on Vercel's servers — no API key
+ * of any kind ever reaches the browser.
  */
 
 'use strict';
 
-const { callClaude, parseJsonResponse, ClaudeConfigError, ClaudeUpstreamError } = require('../lib/claudeClient');
+const { callLLM, parseJsonResponse, LLMConfigError, LLMUpstreamError } = require('../lib/llmClient');
 const { buildLineagePrompt } = require('../lib/prompts');
 const { validateAndNormalizeGraph, GraphValidationError } = require('../lib/validateGraph');
 const { checkRateLimit, clientKeyFromRequest, ensureSweepScheduled } = require('../lib/rateLimit');
@@ -19,7 +21,7 @@ const MAX_TOTAL_CONTENT_CHARS = 80_000; // generous for real SSAS query sets, ch
 const MAX_BODY_BYTES = 400 * 1024; // pasted queries can legitimately be large; still far below Vercel's ~4.5MB platform limit
 const ALLOWED_DIALECTS = new Set(['sql', 'dax', 'm', 'other']);
 
-// This endpoint costs a real Claude call per request, so it gets a
+// This endpoint costs a real LLM call per request, so it gets a
 // tighter budget than a read-only endpoint would. See lib/rateLimit.js
 // for what this protection does and doesn't cover.
 const RATE_LIMIT = { windowMs: 60 * 1000, max: 6 };
@@ -97,7 +99,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const { system, userContent } = buildLineagePrompt(cleanSources);
-    const responseText = await callClaude({
+    const responseText = await callLLM({
       system,
       messages: [{ role: 'user', content: userContent }],
       maxTokens: 8000,
@@ -108,23 +110,23 @@ module.exports = async function handler(req, res) {
     try {
       rawGraph = parseJsonResponse(responseText);
     } catch {
-      res.status(502).json({ error: 'Claude did not return valid JSON for this source set. Try again, or split large sources into smaller pieces.' });
+      res.status(502).json({ error: 'The model did not return valid JSON for this source set. Try again, or split large sources into smaller pieces.' });
       return;
     }
 
     const { graph, warnings } = validateAndNormalizeGraph(rawGraph, cleanSources.map((s) => s.name));
     res.status(200).json({ graph, warnings });
   } catch (err) {
-    if (err instanceof ClaudeConfigError) {
+    if (err instanceof LLMConfigError) {
       res.status(500).json({ error: err.message });
       return;
     }
-    if (err instanceof ClaudeUpstreamError) {
+    if (err instanceof LLMUpstreamError) {
       res.status(err.status).json({ error: err.message });
       return;
     }
     if (err instanceof GraphValidationError) {
-      res.status(502).json({ error: `Claude's output didn't match the expected graph shape: ${err.message}` });
+      res.status(502).json({ error: `The model's output didn't match the expected graph shape: ${err.message}` });
       return;
     }
     console.error('Unexpected error in /api/infer-lineage:', err);

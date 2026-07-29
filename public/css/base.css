@@ -4,6 +4,17 @@
   box-sizing: border-box;
 }
 
+/* Several components below set their own `display` (flex/inline-flex),
+   which — by normal CSS cascade rules — silently wins over the
+   browser's built-in `[hidden] { display: none }` regardless of
+   selector specificity, since author styles always outrank user-agent
+   styles. This restores `hidden` to actually hiding things, which
+   every JS module in this app (toast/canvas-toolbar/modal toggles)
+   relies on. */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
