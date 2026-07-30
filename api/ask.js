@@ -77,11 +77,13 @@ module.exports = async function handler(req, res) {
   try {
     const { graph } = validateAndNormalizeGraph(req.body?.graph);
     const { system, userContent } = buildAskPrompt(question, graph);
+    const requestedModel = typeof req.body?.model === 'string' ? req.body.model : undefined;
     const answer = await callLLM({
       system,
       messages: [{ role: 'user', content: userContent }],
       maxTokens: 1200,
       temperature: 0.2,
+      model: requestedModel,
     });
     res.status(200).json({ answer });
   } catch (err) {

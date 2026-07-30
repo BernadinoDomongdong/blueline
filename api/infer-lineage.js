@@ -99,11 +99,16 @@ module.exports = async function handler(req, res) {
 
   try {
     const { system, userContent } = buildLineagePrompt(cleanSources);
+    // A model id picked in the UI's model picker; llmClient validates
+    // it against the curated shortlist before ever using it (a raw
+    // client string is never passed straight to an upstream API).
+    const requestedModel = typeof req.body?.model === 'string' ? req.body.model : undefined;
     const responseText = await callLLM({
       system,
       messages: [{ role: 'user', content: userContent }],
       maxTokens: 8000,
       temperature: 0,
+      model: requestedModel,
     });
 
     let rawGraph;

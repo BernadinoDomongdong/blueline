@@ -44,7 +44,12 @@ export class GraphView {
     this.onEdgeDblTapCallbacks = [];
     this.onEdgeCreatedCallbacks = [];
     this.onSelectionClearedCallbacks = [];
-    this.colors = {
+    this.colors = this._readColors();
+  }
+
+  /** Reads the current theme's colors from CSS custom properties (tokens.css) — called at construction and again by refreshTheme(). */
+  _readColors() {
+    return {
       high: cssVar('--confidence-high'),
       medium: cssVar('--confidence-medium'),
       low: cssVar('--confidence-low'),
@@ -55,6 +60,17 @@ export class GraphView {
       bg: cssVar('--bg'),
       cyan: cssVar('--cyan'),
     };
+  }
+
+  /**
+   * Re-reads colors from tokens.css and re-applies them to the live
+   * cytoscape instance, without destroying/rebuilding it — so a
+   * dark/light theme toggle (js/theme.js) updates an already-drawn
+   * graph in place instead of waiting for the next full render().
+   */
+  refreshTheme() {
+    this.colors = this._readColors();
+    this.cy?.style(this._buildStyle());
   }
 
   onNodeSelect(cb) {

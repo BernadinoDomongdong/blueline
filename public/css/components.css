@@ -588,3 +588,64 @@
   font-family: var(--font-data);
   color: var(--ink-faint);
 }
+
+/* Model picker — a Free/Paid chip toggle, the dashed-border select
+   (a nod to the BERN-AI reference this was modeled on), and a
+   capacity bar for the selected model's context window. */
+.chip {
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  letter-spacing: 0.03em;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: var(--sp-1) var(--sp-3);
+  cursor: pointer;
+  transition: all var(--motion-fast) var(--ease);
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--copper-dim);
+  color: var(--ink);
+}
+
+.chip.is-active {
+  background: var(--copper-dim);
+  border-color: var(--copper);
+  color: var(--copper);
+}
+
+.chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.model-select {
+  background: var(--bg);
+  border: 1.5px dashed var(--copper);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  padding: var(--sp-2) var(--sp-3);
+  width: 100%;
+}
+
+.model-select:focus {
+  outline: 2px solid var(--copper);
+  outline-offset: 1px;
+}
+
+.capacity-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--hairline);
+  overflow: hidden;
+}
+
+.capacity-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--copper-dim), var(--copper));
+  transition: width var(--motion-base) var(--ease);
+}

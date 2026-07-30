@@ -118,7 +118,7 @@ export class SourcesPanel {
 
     try {
       const payload = sources.map(({ name, dialect, content }) => ({ name, dialect, content }));
-      const { graph, warnings } = await api.inferLineage(payload);
+      const { graph, warnings } = await api.inferLineage(payload, this.store.get().selectedModel);
       this.store.set({ graph });
       this._setStatus(`Traced ${graph.nodes.length} nodes, ${graph.edges.length} edges.`, 'done');
       if (warnings?.length) {

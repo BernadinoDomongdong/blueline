@@ -72,3 +72,28 @@
     --motion-slow: 0ms;
   }
 }
+
+/* Light theme — same blueprint concept, drafting-paper instead of
+   cyanotype: cream vellum background, navy ink, the same accent
+   hues deepened for contrast against a light surface. Toggled by
+   js/theme.js via data-theme on <html>; every other rule in this
+   app reads colors through the tokens above, so nothing outside
+   this block needs to know a light mode exists. */
+[data-theme='light'] {
+  --bg: #f5f1e8;
+  --panel: #fffdf8;
+  --panel-raised: #ffffff;
+  --grid-line: rgba(22, 50, 74, 0.06);
+  --hairline: rgba(22, 50, 74, 0.14);
+
+  --ink: #16324a;
+  --ink-dim: #4d6478;
+  --ink-faint: #7c8fa0;
+
+  --copper: #a8672a;
+  --copper-dim: rgba(168, 103, 42, 0.25);
+  --cyan: #1f7f9e;
+  --cyan-dim: rgba(31, 127, 158, 0.25);
+  --brick: #b8492f;
+  --brick-dim: rgba(184, 73, 47, 0.22);
+}

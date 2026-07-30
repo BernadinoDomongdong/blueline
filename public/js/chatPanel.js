@@ -35,7 +35,7 @@ export class ChatPanel {
     const pendingEl = this._appendMessage('Thinking…', 'assistant');
 
     try {
-      const { answer } = await api.ask(question, graph);
+      const { answer } = await api.ask(question, graph, this.store.get().selectedModel);
       pendingEl.textContent = '';
       pendingEl.innerHTML = renderInlineMarkdown(answer);
     } catch (err) {

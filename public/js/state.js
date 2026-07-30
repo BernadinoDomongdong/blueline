@@ -11,6 +11,7 @@ export function createStore() {
     sources: [], // { id, name, dialect, content }
     graph: EMPTY_GRAPH,
     selectedNodeId: null,
+    selectedModel: null, // set once ModelPicker loads /api/models; null lets the backend fall back to its own default
   };
   const listeners = new Set();
 

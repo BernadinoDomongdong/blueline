@@ -78,11 +78,13 @@ module.exports = async function handler(req, res) {
     }
     const impact = computeImpact(graph);
     const { system, userContent } = buildReportPrompt(reportType, graph, impact);
+    const requestedModel = typeof req.body?.model === 'string' ? req.body.model : undefined;
     const markdown = await callLLM({
       system,
       messages: [{ role: 'user', content: userContent }],
       maxTokens: 6000,
       temperature: 0.3,
+      model: requestedModel,
     });
     res.status(200).json({ markdown });
   } catch (err) {

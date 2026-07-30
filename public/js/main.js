@@ -11,7 +11,10 @@ import { ChatPanel } from './chatPanel.js';
 import { ReportPanel } from './reportPanel.js';
 import { ImportExport } from './importExport.js';
 import { EditMode } from './editMode.js';
+import { ModelPicker } from './modelPicker.js';
 import { initTabs } from './tabs.js';
+import { initTheme } from './theme.js';
+import { initClock } from './clock.js';
 
 const store = createStore();
 const graphView = new GraphView(document.getElementById('graphCanvas'));
@@ -89,13 +92,25 @@ new EditMode({
 graphView.render(store.get().graph);
 updateGraphUI(store.get().graph);
 
+// Dark/light toggle — refreshes the already-drawn canvas's colors in
+// place (not just new CSS) so a mid-session toggle doesn't leave a
+// rendered graph on the old theme until the next full re-render.
+initTheme({ onChange: () => graphView.refreshTheme() });
+initClock();
+
+// BERN-AI-style model picker: Free/Paid toggle + dropdown + capacity
+// bar, populated from the curated shortlist in lib/llmClient.js.
+// Writes the chosen model id into store.selectedModel, which
+// sourcesPanel/chatPanel/reportPanel send along with every request.
+new ModelPicker({ store });
+
 // Read-only confirmation of which LLM provider/model this deployment
 // is configured to use (set via .env — see .env.example). Never
 // exposes a key, just the provider + model id.
 fetch('/api/model-info')
   .then((res) => (res.ok ? res.json() : null))
   .then((info) => {
-    if (info && modelStampEl) modelStampEl.textContent = `Model: ${info.provider} · ${info.model}`;
+    if (info && modelStampEl) modelStampEl.textContent = `Deployment default: ${info.provider} · ${info.model}`;
   })
   .catch(() => {
     /* purely informational — a failed fetch just leaves the stamp blank */

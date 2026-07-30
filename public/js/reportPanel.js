@@ -44,7 +44,7 @@ export class ReportPanel {
     this.outputEl.innerHTML = '';
 
     try {
-      const { markdown } = await api.report(graph, reportType);
+      const { markdown } = await api.report(graph, reportType, this.store.get().selectedModel);
       this.lastMarkdown = markdown;
       this.lastType = reportType;
       this.outputEl.innerHTML = window.marked ? window.marked.parse(markdown) : escapeHtml(markdown);

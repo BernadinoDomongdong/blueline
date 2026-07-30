@@ -50,6 +50,73 @@
   white-space: nowrap;
 }
 
+.titleblock__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.digital-clock {
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+}
+
+.model-picker-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--panel);
+  flex-wrap: wrap;
+}
+
+.model-picker__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 280px;
+}
+
+.model-picker__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.model-picker__label {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.model-picker__hint {
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+
+.model-picker__capacity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 200px;
+  flex: 1;
+  max-width: 320px;
+}
+
+.model-picker__capacity-label {
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  color: var(--copper);
+  letter-spacing: 0.04em;
+}
+
 .app__body {
   flex: 1;
   display: grid;

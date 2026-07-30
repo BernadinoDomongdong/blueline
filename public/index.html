@@ -24,7 +24,31 @@
       <div class="titleblock__stamp">
         <span id="graphStamp">NO LINEAGE DRAWN</span>
       </div>
+      <div class="titleblock__controls">
+        <time id="digitalClock" class="digital-clock" aria-label="Current time">--:--:--</time>
+        <button id="themeToggle" type="button" class="btn btn--icon" aria-pressed="false" title="Switch to light mode">☀</button>
+      </div>
     </header>
+
+    <div class="model-picker-bar" id="modelPicker">
+      <div class="model-picker__field">
+        <div class="model-picker__label-row">
+          <span class="model-picker__label">Choose a model</span>
+          <span class="model-picker__tiers" role="group" aria-label="Model pricing tier">
+            <button id="modelTierFree" type="button" class="chip is-active">Free</button>
+            <button id="modelTierPaid" type="button" class="chip">Paid</button>
+          </span>
+        </div>
+        <select id="modelSelect" class="model-select" aria-label="Model"></select>
+        <p id="modelHint" class="model-picker__hint">Loading models…</p>
+      </div>
+      <div class="model-picker__capacity">
+        <span id="modelCapacityLabel" class="model-picker__capacity-label">Capacity</span>
+        <div class="capacity-bar">
+          <div id="modelCapacityBarFill" class="capacity-bar__fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="app__body">
       <!-- Sources -->

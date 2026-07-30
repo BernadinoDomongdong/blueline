@@ -48,13 +48,20 @@ depend on.
   positions, so a hand-arranged layout survives), export the edge
   list as CSV for a spreadsheet review, snapshot the diagram as PNG,
   or import a previously exported JSON graph to keep working on it.
-- **Bring your own model.** Runs on [OpenRouter](https://openrouter.ai)
-  by default — one key, your choice of free or paid models, switchable
-  by editing a single line in `.env`. Prefer a model running on your
-  own machine (Ollama, LM Studio) or your org's own LLM gateway?
-  Point `CUSTOM_LLM_BASE_URL` at it instead. Already have a direct
-  Anthropic key and don't want a middleman? That works too. See
-  [Choosing a model](#choosing-a-model) below.
+- **Pick a model right in the app.** A Free/Paid toggle and dropdown
+  in the header lets you choose which model handles the next request
+  — no redeploy needed. Runs on [OpenRouter](https://openrouter.ai) by
+  default — one key, a curated shortlist of free and paid models (see
+  [Choosing a model](#choosing-a-model)). Prefer a model running on
+  your own machine (Ollama, LM Studio) or your org's own LLM gateway?
+  Point `CUSTOM_LLM_BASE_URL` at it instead — the picker hides itself
+  automatically, since a custom or direct-Anthropic deployment is a
+  single fixed model.
+- **Dark or light, your call.** The default is a dark cyanotype-
+  blueprint theme; the toggle in the header switches to a light
+  drafting-paper palette, remembers your choice, and updates an
+  already-drawn diagram immediately rather than waiting for the next
+  render.
 
 ## Built with
 
@@ -98,8 +105,15 @@ below.
 
 - **`openrouter`** *(default)* — one API key, hundreds of models
   behind it. Get a free key at
-  [openrouter.ai/keys](https://openrouter.ai/keys) (no card required),
-  set `OPENROUTER_API_KEY`, and pick a model with `OPENROUTER_MODEL`:
+  [openrouter.ai/keys](https://openrouter.ai/keys) (no card required)
+  and set `OPENROUTER_API_KEY`. This is the only provider with an
+  in-app model picker (the Free/Paid toggle and dropdown in the
+  header) — whatever a visitor picks there is used for their next
+  request; `OPENROUTER_MODEL` is just the fallback used before anyone
+  has picked anything, or if the picker fails to load, and — unlike
+  the picker — accepts any id from
+  [openrouter.ai/models](https://openrouter.ai/models), not only the
+  curated shortlist below.
   - **Free models** cost nothing but are rate-limited by OpenRouter
     (20 requests/minute; 50/day with no credits purchased, 1,000/day
     once you've bought $10 in credits). Good for trying Blueline out
@@ -107,24 +121,33 @@ below.
   - **Paid models** are billed per-token by OpenRouter — no separate
     Anthropic/OpenAI/Google account needed — and are far more
     reliable at Blueline's structured-JSON extraction than the free
-    tier.
-  - `.env.example` ships a curated shortlist of both, picked for this
-    app's actual workload (turning SQL/DAX/Power Query into
-    strict-schema lineage JSON). Any other id from
-    [openrouter.ai/models](https://openrouter.ai/models) works too —
-    it's a starting shortlist, not an allowlist. OpenRouter's free
-    roster in particular rotates as providers add and retire models;
-    if a `:free` id ever stops working, that page's Price filter will
-    show its current replacement.
+    tier. If you're deploying this somewhere public and want to keep
+    costs predictable, set `ALLOW_PAID_MODELS=false` to remove paid
+    models from the picker entirely — the server rejects a paid
+    selection even if someone crafts the request by hand.
+  - `lib/llmClient.js` (`FREE_MODELS` / `PAID_MODELS`) holds the
+    curated shortlist behind both `.env.example` and the in-app
+    picker — picked for this app's actual workload (turning SQL/DAX/
+    Power Query into strict-schema lineage JSON). A client-supplied
+    model id is always checked against this list server-side before
+    it's ever sent upstream (`llmClient.sanitizeModelChoice`) — the
+    picker can't be used to make Blueline call an arbitrary model.
+    OpenRouter's free roster in particular rotates as providers add
+    and retire models; if a `:free` id ever stops working, check
+    [openrouter.ai/models](https://openrouter.ai/models)'s Price
+    filter for its replacement and update the entry in
+    `lib/llmClient.js`.
 - **`custom`** — a model running on your own machine (Ollama, LM
   Studio, vLLM — anything that speaks the OpenAI-compatible
   `/chat/completions` shape) or your organization's own internal LLM
   gateway. Set `CUSTOM_LLM_BASE_URL` (e.g. `http://localhost:11434/v1`
   for Ollama), `CUSTOM_LLM_MODEL`, and `CUSTOM_LLM_API_KEY` if your
-  endpoint requires one.
+  endpoint requires one. A single fixed model, so the in-app picker
+  hides itself for this provider.
 - **`anthropic`** — calls the real Anthropic Messages API directly,
   no middleman, if you'd rather use a key you already have. Set
-  `ANTHROPIC_API_KEY` and optionally `ANTHROPIC_MODEL`.
+  `ANTHROPIC_API_KEY` and optionally `ANTHROPIC_MODEL`. Also a single
+  fixed model — picker hidden, same as `custom`.
 
 The footer of the app shows which provider and model the current
 deployment is configured to use, so you can confirm a change took
