@@ -1,0 +1,9 @@
+.graph-canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.graph-canvas canvas {
+  outline: none;
+}
