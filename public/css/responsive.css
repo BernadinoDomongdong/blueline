@@ -45,3 +45,41 @@
     max-width: none;
   }
 }
+
+@media (max-width: 640px) {
+  /* A vertical palette eats too much of an already-short mobile
+     canvas (the stacked layout gives it ~50vh) — lay it out
+     horizontally instead so it stays a thin strip. */
+  .palette {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: calc(100% - 2 * var(--sp-3));
+    align-items: center;
+  }
+
+  .palette__title {
+    padding: 0 var(--sp-1) 0 0;
+  }
+
+  .palette__item {
+    padding: var(--sp-1) var(--sp-2);
+  }
+
+  .legend {
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-3);
+    max-width: calc(100% - 2 * var(--sp-3));
+  }
+
+  .empty-state {
+    max-width: calc(100% - var(--sp-6));
+  }
+
+  .titleblock__brand {
+    font-size: var(--text-base);
+  }
+
+  .modal__body {
+    padding: var(--sp-3);
+  }
+}

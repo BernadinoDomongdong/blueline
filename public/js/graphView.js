@@ -38,6 +38,7 @@ export class GraphView {
     this.container = container;
     this.cy = null;
     this.eh = null; // cytoscape-edgehandles instance, (re)built per render()
+    this._connectModeActive = false;
     this.onNodeSelectCallbacks = [];
     this.onEdgeSelectCallbacks = [];
     this.onNodeDblTapCallbacks = [];
@@ -154,7 +155,17 @@ export class GraphView {
   _wireEvents() {
     this.cy.on('tap', 'node', (evt) => {
       const id = evt.target.id();
-      this.highlightNode(id);
+      if (this._connectModeActive) {
+        // Dimming every other node (the normal "inspect" highlight)
+        // would make potential connection targets hard to see and hit
+        // while actively dragging a link between two nodes — keep
+        // everything fully visible during Connect mode instead.
+        this.cy.elements().removeClass('dim');
+        this.cy.elements().removeClass('selected');
+        evt.target.addClass('selected');
+      } else {
+        this.highlightNode(id);
+      }
       for (const cb of this.onNodeSelectCallbacks) cb(id);
     });
 
@@ -191,11 +202,12 @@ export class GraphView {
   _initEdgehandles() {
     if (typeof this.cy.edgehandles !== 'function') return; // extension script not loaded — degrade quietly
     this.eh = this.cy.edgehandles({
-      canConnect: (sourceNode, targetNode) => !sourceNode.same(targetNode),
+      canConnect: (sourceNode, targetNode) =>
+        !sourceNode.same(targetNode) && sourceNode.edgesTo(targetNode).length === 0,
       edgeParams: () => ({
         data: { id: makeEdgeId(), transformation: '', type: 'direct', confidence: 'high' },
       }),
-      hoverDelay: 150,
+      hoverDelay: 70,
       snap: true,
       snapThreshold: 50,
       snapFrequency: 15,
@@ -213,8 +225,15 @@ export class GraphView {
   /** Turns drag-to-connect ("Connect" tool) on or off. */
   setConnectMode(enabled) {
     if (!this.eh) return;
-    if (enabled) this.eh.enableDrawMode();
-    else this.eh.disableDrawMode();
+    this._connectModeActive = enabled;
+    if (enabled) {
+      this.eh.enableDrawMode();
+      // Clear any dimming left over from before Connect was turned on,
+      // so every node starts fully visible as a potential target.
+      this.cy?.elements().removeClass('dim');
+    } else {
+      this.eh.disableDrawMode();
+    }
   }
 
   _runLayout() {
@@ -392,6 +411,21 @@ export class GraphView {
     return { x: (extent.x1 + extent.x2) / 2, y: (extent.y1 + extent.y2) / 2 };
   }
 
+  /** Public wrapper for _viewportCenter, used as the drop position when a palette component is clicked rather than dragged. */
+  viewportCenterModelPosition() {
+    if (!this.cy) return { x: 0, y: 0 };
+    return this._viewportCenter();
+  }
+
+  /** Converts a viewport-relative pointer position (e.g. a drop event's clientX/Y) into model coordinates, for palette drag-and-drop. */
+  clientPositionToModel(clientX, clientY) {
+    if (!this.cy) return { x: 0, y: 0 };
+    const rect = this.container.getBoundingClientRect();
+    const pan = this.cy.pan();
+    const zoom = this.cy.zoom();
+    return { x: (clientX - rect.left - pan.x) / zoom, y: (clientY - rect.top - pan.y) / zoom };
+  }
+
   _buildStyle() {
     const c = this.colors;
     return [
@@ -454,11 +488,11 @@ export class GraphView {
         selector: '.eh-handle',
         style: {
           'background-color': c.cyan,
-          width: 10,
-          height: 10,
+          width: 16,
+          height: 16,
           shape: 'ellipse',
           'overlay-opacity': 0,
-          'border-width': 2,
+          'border-width': 3,
           'border-color': c.bg,
         },
       },

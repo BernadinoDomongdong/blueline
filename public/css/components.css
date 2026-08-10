@@ -213,6 +213,7 @@
 .canvas-toolbar__group {
   display: flex;
   gap: var(--sp-2);
+  flex-wrap: wrap;
 }
 
 /* Empty state, over the canvas */
@@ -432,7 +433,8 @@
 
 .report-output h1,
 .report-output h2,
-.report-output h3 {
+.report-output h3,
+.report-output h4 {
   font-family: var(--font-display);
   color: var(--copper);
   margin: var(--sp-4) 0 var(--sp-2);
@@ -547,6 +549,10 @@
   border: 1px solid var(--hairline);
   border-radius: var(--radius-md);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.modal--wide {
+  max-width: 640px;
 }
 
 .modal__header {

@@ -26,6 +26,7 @@
       </div>
       <div class="titleblock__controls">
         <time id="digitalClock" class="digital-clock" aria-label="Current time">--:--:--</time>
+        <button id="helpBtn" type="button" class="btn btn--icon" title="How to use Blueline">?</button>
         <button id="themeToggle" type="button" class="btn btn--icon" aria-pressed="false" title="Switch to light mode">☀</button>
       </div>
     </header>
@@ -118,7 +119,23 @@
           Editing on — drag a node to reposition it, double-click a node or edge to change it, or use Connect to drag a link between two nodes. Select something and press Delete to remove it (undoable).
         </p>
 
-        <div id="graphCanvas" class="graph-canvas" role="img" aria-label="Data lineage graph"></div>
+        <div id="graphCanvas" class="graph-canvas" role="img" aria-label="Data lineage graph">
+          <div id="componentPalette" class="palette" hidden aria-label="Add a component — drag onto the canvas, or click to add">
+            <div class="palette__title">Add</div>
+            <div class="palette__item" draggable="true" data-node-type="table" title="Drag onto the canvas, or click to add">
+              <span class="palette__swatch palette__swatch--table"></span>Table
+            </div>
+            <div class="palette__item" draggable="true" data-node-type="view" title="Drag onto the canvas, or click to add">
+              <span class="palette__swatch palette__swatch--view"></span>View
+            </div>
+            <div class="palette__item" draggable="true" data-node-type="column" title="Drag onto the canvas, or click to add">
+              <span class="palette__swatch palette__swatch--column"></span>Column
+            </div>
+            <div class="palette__item" draggable="true" data-node-type="measure" title="Drag onto the canvas, or click to add">
+              <span class="palette__swatch palette__swatch--measure"></span>Measure
+            </div>
+          </div>
+        </div>
 
         <div id="emptyState" class="empty-state">
           <p class="empty-state__title">No lineage drawn yet</p>
@@ -186,6 +203,39 @@
         <button type="button" id="editModalClose" class="btn btn--icon" aria-label="Close">✕</button>
       </div>
       <div id="editModalBody" class="modal__body"></div>
+    </div>
+  </div>
+
+  <div id="helpModal" class="modal-overlay" hidden>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+      <div class="modal__header">
+        <h3 id="helpModalTitle">How to use Blueline</h3>
+        <button type="button" id="helpModalClose" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="report-output">
+          <h4>1. Get lineage onto the canvas</h4>
+          <p>Two ways to start: paste or upload SQL, DAX, or Power Query (M) in the <strong>Sources</strong> panel on the left and click <strong>Infer lineage</strong> — parsed locally, no AI, no API key. Or click <strong>▶ Load demo</strong> on the empty canvas to see a worked example first.</p>
+
+          <h4>2. Build or edit it by hand</h4>
+          <p>Turn on <strong>✎ Edit diagram</strong> to reveal the editing tools:</p>
+          <ul>
+            <li><strong>Palette</strong> (top-left of the canvas) — drag a Table, View, Column, or Measure onto the canvas to drop it exactly there, or click a chip to add one at the center of the current view.</li>
+            <li><strong>+ Node</strong> / <strong>+ Edge</strong> — add either through a form instead, if you'd rather type it in directly.</li>
+            <li><strong>⇄ Connect</strong> — drag from one node straight to another to link them. A small handle appears on hover; drag from that handle to the target node.</li>
+            <li><strong>Double-click</strong> any node or edge to edit its details, or <strong>select it and press Delete</strong> to remove it — every delete offers a one-tap Undo.</li>
+          </ul>
+
+          <h4>3. Read the diagram</h4>
+          <p>A <strong>solid</strong> line means high-confidence lineage (resolved from a real SQL parse, or entered by hand). A <strong>dashed</strong> line means medium or low confidence (DAX/M pattern-matching, or an ambiguous unqualified column) — worth a second look. Click any node to see exactly what feeds it and what it feeds, in the <strong>Inspect</strong> tab.</p>
+
+          <h4>4. Ask questions and generate reports (optional)</h4>
+          <p>The <strong>Ask AI</strong> and <strong>Reports</strong> tabs are grounded in whatever graph is currently on the canvas. They need a model provider configured — pick one from the <strong>Choose a model</strong> bar up top if a Free/Paid option is showing. Without a provider configured, both tabs say so plainly and the rest of the app is unaffected.</p>
+
+          <h4>5. Save your work</h4>
+          <p>Use the canvas toolbar to <strong>Export JSON</strong> (round-trips back in later, or hand off to a teammate — preserves your manual layout), <strong>Export CSV</strong> (the edge list, for a spreadsheet), <strong>Export PNG</strong> (a snapshot), or <strong>Import JSON</strong> to load a saved graph back in.</p>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -15,6 +15,7 @@ import { ModelPicker } from './modelPicker.js';
 import { initTabs } from './tabs.js';
 import { initTheme } from './theme.js';
 import { initClock } from './clock.js';
+import { initHelp } from './help.js';
 import { DEMO_GRAPH } from './demoData.js';
 import { normalizeGraph } from './graphSchema.js';
 import { showToast } from './toast.js';
@@ -121,6 +122,7 @@ updateGraphUI(store.get().graph);
 // rendered graph on the old theme until the next full re-render.
 initTheme({ onChange: () => graphView.refreshTheme() });
 initClock();
+initHelp();
 
 // BERN-AI-style model picker: Free/Paid toggle + dropdown + capacity
 // bar, populated from the curated shortlist in lib/llmClient.js.

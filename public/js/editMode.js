@@ -43,6 +43,7 @@ export class EditMode {
 
     this.isEditing = false;
     this.isConnecting = false;
+    this._pendingNodePosition = null;
 
     this.toggleBtn = document.getElementById('editModeToggle');
     this.addNodeBtn = document.getElementById('addNodeBtn');
@@ -51,6 +52,8 @@ export class EditMode {
     this.deleteBtn = document.getElementById('deleteElementBtn');
     this.editHint = document.getElementById('editModeHint');
     this.emptyStateManualBtn = document.getElementById('emptyStateManualBtn');
+    this.palette = document.getElementById('componentPalette');
+    this.canvasEl = document.getElementById('graphCanvas');
 
     this.modalOverlay = document.getElementById('editModal');
     this.modalTitle = document.getElementById('editModalTitle');
@@ -58,6 +61,7 @@ export class EditMode {
     this.modalCloseBtn = document.getElementById('editModalClose');
 
     this._wire();
+    this._wirePalette();
     this._updateToolbarState();
   }
 
@@ -110,12 +114,54 @@ export class EditMode {
     });
   }
 
+  /**
+   * Component palette: drag a Table/View/Column/Measure chip onto the
+   * canvas to drop a new node exactly there, or click a chip to add
+   * one at the current view's center. Either path opens the same
+   * node form (pre-filled with that type) rather than skipping
+   * straight to creation — ID uniqueness still needs to be checked,
+   * and this way there's exactly one place that validates and creates
+   * a node, not two.
+   */
+  _wirePalette() {
+    if (!this.palette || !this.canvasEl) return;
+
+    for (const item of this.palette.querySelectorAll('.palette__item')) {
+      const type = item.dataset.nodeType;
+
+      item.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', type);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+
+      item.addEventListener('click', () => {
+        this._openNodeForm(null, { type, position: this.graphView.viewportCenterModelPosition() });
+      });
+    }
+
+    this.canvasEl.addEventListener('dragover', (e) => {
+      if (!this.isEditing) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    this.canvasEl.addEventListener('drop', (e) => {
+      if (!this.isEditing) return;
+      const type = e.dataTransfer.getData('text/plain');
+      if (!NODE_TYPE_OPTIONS.includes(type)) return;
+      e.preventDefault();
+      this._openNodeForm(null, { type, position: this.graphView.clientPositionToModel(e.clientX, e.clientY) });
+    });
+  }
+
+
   setEditing(on) {
     this.isEditing = on;
     if (!on) this.setConnectMode(false);
     this.toggleBtn.classList.toggle('btn--active', on);
     this.toggleBtn.setAttribute('aria-pressed', String(on));
     document.getElementById('editToolGroup').hidden = !on;
+    if (this.palette) this.palette.hidden = !on;
     if (this.editHint) this.editHint.hidden = !on;
     this._updateToolbarState();
   }
@@ -210,8 +256,13 @@ export class EditMode {
 
   // ─── Node add/edit modal ────────────────────────────────────────
 
-  _openNodeForm(nodeId) {
+  /**
+   * @param {string|null} nodeId - null for a brand-new node.
+   * @param {{type?: string, position?: {x:number,y:number}}} [preset] - pre-fills the type and remembers a drop position, used by the component palette.
+   */
+  _openNodeForm(nodeId, preset = {}) {
     const existing = nodeId ? this.graphView.getNodeData(nodeId) : null;
+    this._pendingNodePosition = existing ? null : preset.position || null;
     this.modalTitle.textContent = existing ? 'Edit node' : 'Add node';
     this.modalBody.innerHTML = `
       <form id="nodeForm" class="modal-form">
@@ -225,7 +276,7 @@ export class EditMode {
         </label>
         <label class="field">
           <span class="field__label">Type</span>
-          <select id="nfType">${optionsHtml(NODE_TYPE_OPTIONS, existing?.type || 'table')}</select>
+          <select id="nfType">${optionsHtml(NODE_TYPE_OPTIONS, existing?.type || preset.type || 'table')}</select>
         </label>
         <label class="field">
           <span class="field__label">Confidence</span>
@@ -284,11 +335,12 @@ export class EditMode {
         return;
       }
       try {
-        this.graphView.addNode({ id, label: label || id, type, confidence, description });
+        this.graphView.addNode({ id, label: label || id, type, confidence, description }, this._pendingNodePosition || undefined);
       } catch (err) {
         showToast(err.message, 'error');
         return;
       }
+      this._pendingNodePosition = null;
       showToast('Node added.');
     }
     this._syncGraph();
