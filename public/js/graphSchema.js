@@ -1,9 +1,10 @@
 /**
  * graphSchema.js — client-side counterpart to lib/validateGraph.js.
- * AI-generated graphs are already validated server-side before they
- * reach the browser; this copy exists mainly to protect the "Import
- * JSON" feature from a malformed or hand-edited file before it's
- * handed to the graph renderer.
+ * Graphs from /api/infer-lineage (a local parser, not an LLM) are
+ * already validated server-side before they reach the browser; this
+ * copy exists mainly to protect the "Import JSON" feature from a
+ * malformed or hand-edited file before it's handed to the graph
+ * renderer.
  */
 
 const NODE_TYPES = new Set(['table', 'view', 'column', 'measure']);

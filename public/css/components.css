@@ -238,11 +238,14 @@
 }
 
 /* The empty-state overlay is click-through by default (nothing to
-   interact with behind an empty canvas); its one actionable button
-   opts back in to pointer events. */
-#emptyStateManualBtn {
+   interact with behind an empty canvas); its actionable buttons opt
+   back in to pointer events. */
+.empty-state__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
   pointer-events: auto;
-  margin-top: var(--sp-2);
 }
 
 /* Legend */
@@ -470,6 +473,24 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   animation: toast-in var(--motion-base) var(--ease);
   max-width: 320px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.toast__action {
+  flex-shrink: 0;
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--cyan);
+  border: 1px solid var(--cyan-dim);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.toast__action:hover {
+  background: var(--cyan-dim);
 }
 
 .toast[data-kind='error'] {

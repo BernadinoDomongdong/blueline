@@ -60,7 +60,7 @@ export class ImportExport {
     const { graph } = this.store.get();
     if (!graph.nodes.length) return;
     // Pulled live from the canvas (not straight from state) so that any
-    // manual repositioning — dragging nodes around after AI inference,
+    // manual repositioning — dragging nodes around after extraction,
     // import, or manual editing — is captured in the export too.
     const snapshot = this.graphView.getGraphSnapshot();
     const exported = { ...snapshot, metadata: graph.metadata };

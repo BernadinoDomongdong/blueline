@@ -5,7 +5,8 @@
  * Design concept: a cyanotype blueprint. Lineage IS tracing — a
  * column's path from a raw table to a report, the way a blueprint
  * traces a structure's load path. Confirmed lineage draws as a solid
- * traced line; AI-inferred, not-yet-verified lineage draws dashed, the
+ * traced line; automatically-traced but not-yet-verified lineage
+ * draws dashed, the
  * way an engineer pencils in a detail before it's checked — structure
  * that means something, not decoration.
  */

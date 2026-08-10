@@ -1,9 +1,11 @@
 /**
  * editMode.js — manual diagram editing: add/edit/delete nodes and
  * edges by hand, and a drag-to-connect "Connect" tool, as an
- * alternative (or a complement) to AI-inferred lineage. Nothing here
- * calls the AI — this is the fully-manual path the README promises:
- * "the user can edit fully, with AI assistance or without it."
+ * alternative (or a complement) to automatically-traced lineage.
+ * Nothing here calls any LLM — this is the fully-manual path the
+ * README promises:
+ * "the diagram is fully hand-editable, whether or not any of it was
+ * traced automatically first."
  *
  * Structural changes (add/edit/delete) are synced back into app state
  * via the onGraphSync callback so the Inspect/Ask AI/Reports tabs and
@@ -76,9 +78,11 @@ export class EditMode {
 
     this.graphView.onNodeDblTap((id) => {
       if (this.isEditing) this._openNodeForm(id);
+      else showToast('Turn on "Edit diagram" to modify nodes.');
     });
     this.graphView.onEdgeDblTap((id) => {
       if (this.isEditing) this._openEdgeForm(id);
+      else showToast('Turn on "Edit diagram" to modify edges.');
     });
     this.graphView.onEdgeCreated((id) => {
       // A drag-connected edge is created with sensible defaults
@@ -137,10 +141,65 @@ export class EditMode {
   _deleteSelected() {
     const sel = this.graphView.getSelection();
     if (!sel) return;
-    this.graphView.removeElement(sel.id);
-    this._syncGraph();
+    if (sel.type === 'node') this._deleteNodeWithUndo(sel.id);
+    else this._deleteEdgeWithUndo(sel.id);
     this._updateToolbarState();
-    showToast(sel.type === 'node' ? 'Node deleted.' : 'Edge deleted.');
+  }
+
+  /**
+   * Deletes a node (and, via cytoscape's own cascade, every edge
+   * touching it) and offers a one-tap Undo that restores both the
+   * node and those edges — a plain "undo the node" that silently
+   * dropped its connections would be a worse surprise than no undo at
+   * all, so both are captured before removal and both come back.
+   */
+  _deleteNodeWithUndo(id) {
+    const nodeData = this.graphView.getNodeData(id);
+    const position = this.graphView.getNodePosition(id);
+    const connectedEdges = this.graphView.getConnectedEdgesData(id);
+    if (!nodeData) return;
+
+    this.graphView.removeElement(id);
+    this._syncGraph();
+
+    showToast('Node deleted.', 'info', {
+      label: 'Undo',
+      onClick: () => {
+        try {
+          this.graphView.addNode(nodeData, position);
+          for (const edgeData of connectedEdges) {
+            if (this.graphView.hasElement(edgeData.source) && this.graphView.hasElement(edgeData.target)) {
+              this.graphView.addEdge(edgeData);
+            }
+          }
+          this._syncGraph();
+          showToast('Node restored.');
+        } catch (err) {
+          showToast(`Could not undo: ${err.message}`, 'error');
+        }
+      },
+    });
+  }
+
+  _deleteEdgeWithUndo(id) {
+    const edgeData = this.graphView.getEdgeData(id);
+    if (!edgeData) return;
+
+    this.graphView.removeElement(id);
+    this._syncGraph();
+
+    showToast('Edge deleted.', 'info', {
+      label: 'Undo',
+      onClick: () => {
+        try {
+          this.graphView.addEdge(edgeData);
+          this._syncGraph();
+          showToast('Edge restored.');
+        } catch (err) {
+          showToast(`Could not undo: ${err.message}`, 'error');
+        }
+      },
+    });
   }
 
   /** Reads the live canvas back into app state and refreshes the UI (counts, Inspect/Ask/Reports enablement) without re-rendering the canvas itself. */
@@ -190,10 +249,8 @@ export class EditMode {
     const form = document.getElementById('nodeForm');
     document.getElementById('nfCancel').addEventListener('click', () => this._closeModal());
     document.getElementById('nfDelete')?.addEventListener('click', () => {
-      this.graphView.removeElement(existing.id);
-      this._syncGraph();
+      this._deleteNodeWithUndo(existing.id);
       this._closeModal();
-      showToast('Node deleted.');
     });
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -305,10 +362,8 @@ export class EditMode {
       this._closeModal();
     });
     document.getElementById('efDelete')?.addEventListener('click', () => {
-      this.graphView.removeElement(edgeIdForDelete);
-      this._syncGraph();
+      this._deleteEdgeWithUndo(edgeIdForDelete);
       this._closeModal();
-      showToast('Edge deleted.');
     });
     form.addEventListener('submit', (e) => {
       e.preventDefault();

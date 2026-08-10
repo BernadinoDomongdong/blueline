@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blueline — AI Data Lineage for SSAS Modernization</title>
-  <meta name="description" content="Paste SQL, DAX, or Power Query source and Blueline traces table- and column-level data lineage — or build the diagram by hand — answers questions about it, and generates documentation and impact-analysis reports." />
+  <title>Blueline — Local Data Lineage for SSAS Modernization</title>
+  <meta name="description" content="Paste SQL, DAX, or Power Query source and Blueline traces table- and column-level data lineage locally, with a real SQL parser — no AI, no API key — or build the diagram by hand. Optional AI-backed Q&A and reports on top." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -115,7 +115,7 @@
         </div>
 
         <p id="editModeHint" class="edit-mode-hint" hidden>
-          Editing on — drag a node to reposition it, double-click a node or edge to change it, or use Connect to drag a link between two nodes.
+          Editing on — drag a node to reposition it, double-click a node or edge to change it, or use Connect to drag a link between two nodes. Select something and press Delete to remove it (undoable).
         </p>
 
         <div id="graphCanvas" class="graph-canvas" role="img" aria-label="Data lineage graph"></div>
@@ -123,7 +123,10 @@
         <div id="emptyState" class="empty-state">
           <p class="empty-state__title">No lineage drawn yet</p>
           <p class="empty-state__body">Add a source query on the left and click "Infer lineage," import a saved graph, or build one by hand.</p>
-          <button id="emptyStateManualBtn" class="btn btn--ghost">+ Start a manual diagram</button>
+          <div class="empty-state__actions">
+            <button id="emptyStateDemoBtn" class="btn btn--primary">▶ Load demo</button>
+            <button id="emptyStateManualBtn" class="btn btn--ghost">+ Start a manual diagram</button>
+          </div>
         </div>
 
         <div class="legend" aria-hidden="true">

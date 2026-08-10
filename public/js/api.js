@@ -72,8 +72,8 @@ async function getJSON(url) {
 }
 
 export const api = {
-  inferLineage(sources, model) {
-    return postJSON('/api/infer-lineage', { sources, model });
+  inferLineage(sources) {
+    return postJSON('/api/infer-lineage', { sources });
   },
   ask(question, graph, model) {
     return postJSON('/api/ask', { question, graph, model });

@@ -7,10 +7,10 @@
  *
  * Edge line style encodes meaning, not decoration: solid = high-
  * confidence (confirmed) lineage, dashed = medium/low-confidence
- * (AI-inferred, not yet verified) — the same convention an engineer
+ * (automatically-traced but not yet verified) — the same convention an engineer
  * uses penciling in an unconfirmed detail on a blueprint. A manually
  * added node or edge defaults to "high" confidence, since a human
- * asserted it directly rather than an AI inferring it.
+ * asserted it directly rather than it being traced automatically.
  */
 
 function cssVar(name) {
@@ -344,6 +344,19 @@ export class GraphView {
   getNodeData(id) {
     const el = this.cy?.getElementById(id);
     return el && !el.empty() && el.isNode() ? { ...el.data() } : null;
+  }
+
+  /** @returns {{x: number, y: number}|null} a node's current on-screen position, for restoring it in the same spot after an undo. */
+  getNodePosition(id) {
+    const el = this.cy?.getElementById(id);
+    return el && !el.empty() && el.isNode() ? { ...el.position() } : null;
+  }
+
+  /** @returns {Array<Object>} plain data for every edge currently touching a node — captured before removeElement() cascades their deletion too, so an undo can restore them. */
+  getConnectedEdgesData(nodeId) {
+    const el = this.cy?.getElementById(nodeId);
+    if (!el || el.empty()) return [];
+    return el.connectedEdges().map((e) => ({ ...e.data() }));
   }
 
   getEdgeData(id) {

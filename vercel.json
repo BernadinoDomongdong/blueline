@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/infer-lineage.js": { "maxDuration": 60 },
+    "api/infer-lineage.py": { "maxDuration": 15 },
     "api/report.js": { "maxDuration": 60 },
     "api/ask.js": { "maxDuration": 30 }
   },

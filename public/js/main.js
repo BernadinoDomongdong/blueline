@@ -15,6 +15,9 @@ import { ModelPicker } from './modelPicker.js';
 import { initTabs } from './tabs.js';
 import { initTheme } from './theme.js';
 import { initClock } from './clock.js';
+import { DEMO_GRAPH } from './demoData.js';
+import { normalizeGraph } from './graphSchema.js';
+import { showToast } from './toast.js';
 
 const store = createStore();
 const graphView = new GraphView(document.getElementById('graphCanvas'));
@@ -40,8 +43,8 @@ function updateGraphUI(graph) {
 
 // Full re-render: destroys and rebuilds the canvas, running an
 // auto-layout unless the graph already carries positions (see
-// GraphView.render). Used for AI inference and JSON import — cases
-// where the incoming graph is a wholesale replacement, not an edit.
+// GraphView.render). Used for lineage extraction and JSON import —
+// cases where the incoming graph is a wholesale replacement, not an edit.
 function renderGraph(graph) {
   graphView.render(graph);
   inspector.clear();
@@ -60,6 +63,27 @@ const importExport = new ImportExport({
 });
 
 new ChatPanel({ store });
+
+// Demo: drops in a small bundled sample graph so the app can be tried
+// before pasting anything real. Same confirm-before-overwrite guard
+// as re-running inference, since it's the same kind of destructive
+// wholesale replacement.
+const emptyStateDemoBtn = document.getElementById('emptyStateDemoBtn');
+emptyStateDemoBtn?.addEventListener('click', () => {
+  const { graph } = store.get();
+  if (graph.nodes.length > 0) {
+    const proceed = window.confirm(
+      `This will replace the current diagram (${graph.nodes.length} nodes, ${graph.edges.length} edges) with the demo graph. Any work will be lost. Continue?`
+    );
+    if (!proceed) return;
+  }
+  try {
+    renderGraph(normalizeGraph(DEMO_GRAPH));
+    showToast('Demo lineage loaded — click around, or clear it and start your own.');
+  } catch (err) {
+    showToast(`Could not load the demo: ${err.message}`, 'error');
+  }
+});
 
 graphView.onNodeSelect((nodeId) => {
   inspector.show(nodeId);
@@ -87,8 +111,8 @@ new EditMode({
 });
 
 // Initialize the canvas once at startup — even with an empty graph —
-// so "Edit diagram → + Node" works immediately without requiring an
-// AI inference or import first (the fully-manual path).
+// so "Edit diagram → + Node" works immediately without requiring
+// lineage extraction or import first (the fully-manual path).
 graphView.render(store.get().graph);
 updateGraphUI(store.get().graph);
 
