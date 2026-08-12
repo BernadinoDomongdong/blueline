@@ -25,10 +25,15 @@ depend on.
   with documented, targeted pattern-matching instead (see
   [How lineage is traced](#how-lineage-is-traced) for exactly what
   that does and doesn't catch).
-- **Or draw it by hand.** Turn on "Edit diagram" to add nodes, drag a
-  connector from one node to another to link them, or fill in a
-  form-based "+ Edge." Double-click anything to edit or delete it.
-  Build a diagram from a blank canvas, or touch up what got traced
+- **Or draw it by hand.** Turn on **✎ Edit diagram** to reveal the
+  editing tools: a component palette (drag a Table/View/Column/Measure
+  chip onto the canvas, or click one to add it at the current view's
+  center), **⇄ Connect** to drag a link directly from one node to
+  another, and **+ Node**/**+ Edge** forms if you'd rather type it in.
+  Double-click anything to edit its details; select it and press
+  Delete to remove it — every delete offers a one-tap Undo, including
+  correctly restoring a deleted node's connected edges. Build a
+  diagram from a blank canvas, or touch up what got traced
   automatically — running extraction again always asks first before
   it would overwrite manual work.
 - **Draws it like a blueprint.** High-confidence lineage (including
@@ -60,6 +65,13 @@ depend on.
   blueprint theme; the toggle in the header switches to a light
   drafting-paper palette and updates an already-drawn diagram
   immediately.
+- **A real in-app guide, not just this README.** Click **?** in the
+  header for a walkthrough of every feature above, without leaving
+  the app.
+- **Usable on a phone or tablet, not just a wide desktop monitor.**
+  The three-column layout collapses to a single scrolling column
+  below 860px, and the canvas toolbar, palette, and legend all reflow
+  instead of overflowing on narrow screens.
 
 ## How lineage is traced
 
@@ -98,38 +110,40 @@ exactly this kind of touch-up.
 
 Lineage extraction never uses an LLM, full stop — the section above is
 the whole story. **Ask AI** and **Reports** are a separate, optional
-layer on top, switched on the moment you configure a provider.
-Without one configured, those two tabs stay visibly disabled rather
-than failing confusingly.
+layer on top, and they work two ways:
 
-Configured with a single `LLM_PROVIDER` variable (see `.env.example`
-for the full, commented list):
+**Bring your own key (the normal path).** Click **AI: Off** in the
+header and paste in an API key for Anthropic, OpenRouter, or your own
+custom OpenAI-compatible endpoint (a local model via Ollama/LM Studio,
+or your org's own gateway). That credential is stored in your
+browser's `localStorage` only — never on any server, never in this
+repo — and sent to `/api/ask` / `/api/report` only as part of your own
+requests, which forward it straight to the provider you picked and
+discard it once that single call finishes (see
+`lib/llmClient.js:resolveClientCredential`). There's no account
+system and no database here for it to live in even if that were the
+intent. Each person using a deployment brings their own account, so
+there's no shared usage or shared cost for whoever runs the
+deployment to worry about.
 
-- **`openrouter`** — one API key, hundreds of models. Get a free key
-  at [openrouter.ai/keys](https://openrouter.ai/keys) (no card
-  required) and set `OPENROUTER_API_KEY`. The header's Free/Paid
-  toggle and dropdown are populated by fetching OpenRouter's live
-  model catalog (cached for 10 minutes) and filtering it — never a
-  hardcoded list, since free-tier availability rotates often enough
-  that a hardcoded snapshot goes stale within weeks. A client-supplied
-  model choice is always re-validated against that live catalog
-  server-side before it's ever sent upstream
-  (`llmClient.sanitizeModelChoice`) — the picker can't be used to make
-  Blueline call an arbitrary model. Set `ALLOW_PAID_MODELS=false` to
-  remove paid models from the picker (and reject a paid selection
-  server-side) if you're deploying somewhere public and want
-  predictable costs.
-- **`custom`** — a model running on your own machine (Ollama, LM
-  Studio, vLLM) or your organization's own OpenAI-compatible gateway.
-  Set `CUSTOM_LLM_BASE_URL`, `CUSTOM_LLM_MODEL`, and
-  `CUSTOM_LLM_API_KEY` if it requires one. A single fixed model, so
-  the picker hides itself.
-- **`anthropic`** — calls the real Anthropic Messages API directly.
-  Set `ANTHROPIC_API_KEY` and optionally `ANTHROPIC_MODEL`. Also a
-  single fixed model.
+**A deployment-wide default (optional, for the person who runs the
+deployment).** If you'd rather every visitor get AI features without
+each needing their own key, set `LLM_PROVIDER` plus that provider's
+variables in Vercel's environment variables (see `.env.example` for
+the full list) — this becomes the fallback whenever a visitor hasn't
+set their own credential. The footer shows whether a deployment
+default is active (`api/model-info.js` — read-only, never a key).
 
-The footer shows which provider/model (if any) is currently active —
-read-only, never a key (`api/model-info.js`).
+A couple of things worth knowing regardless of which path you use:
+- Claude is available through both `anthropic` (direct) and
+  `openrouter`, but it's never free either way — a new Anthropic
+  account gets a one-time trial credit (a few dollars), then it's
+  pay-per-token; on OpenRouter, Claude is always listed as paid, never
+  in the free tier there.
+- OpenRouter itself is free to get a key for at
+  [openrouter.ai/keys](https://openrouter.ai/keys) (no card required)
+  — free-tier *models* (Llama, DeepSeek, and similar) exist there too,
+  billed at $0, separate from whether Claude specifically is free.
 
 ## Built with
 
@@ -150,7 +164,10 @@ No database — a graph lives in the browser until you export it.
    `requirements.txt` at the project root, everything else from
    `package.json`. No provider key is required for this step —
    lineage extraction works with zero environment variables set.
-3. *(Optional)* Want Ask AI / Reports too? Set up a provider — see
+3. *(Optional)* Want Ask AI / Reports too? Usually nothing to do here
+   — visitors bring their own key from inside the app. Only set up a
+   deployment-wide default provider if you want AI features to work
+   for every visitor without them supplying anything — see
    [Optional: AI features](#optional-ai-features).
 4. *(Optional)* `ALLOWED_ORIGIN`, `GLOBAL_RATE_LIMIT_PER_MINUTE` —
    tighten security and abuse protection for a public deployment.
@@ -177,14 +194,21 @@ vercel dev
 Lineage extraction makes no network call of any kind — there's
 nothing to leak and nothing to rate-limit against a paid budget, only
 against plain compute abuse, so that endpoint's limits are
-correspondingly looser. For the optional AI features, whichever
-provider key you configure never reaches the browser — every model
-call happens inside a Vercel function. All endpoints are rate-limited
-per visitor, capped on body size, timed out, and (optionally)
-restricted to your deployed origin. Security headers lock down
-scripts, framing, and permissions site-wide. This is a real, layered
-defense for a small app — not a claim that it's immune to a
-determined attacker.
+correspondingly looser. For the optional AI features, two different
+things are true depending on which path is active: a deployment-wide
+key (set via Vercel environment variables) never reaches the browser,
+same as always — every call happens inside a Vercel function. A
+visitor's own bring-your-own-key credential, by contrast, *does* live
+in their browser (`localStorage`) by design — that's the entire point
+of BYOK, and it's their own key for their own account, not a shared
+secret this app is responsible for protecting. It's sent to this
+app's own `/api/ask` / `/api/report` per request and forwarded
+straight to the provider, never logged or persisted server-side. All
+endpoints are rate-limited per visitor, capped on body size, timed
+out, and (optionally) restricted to your deployed origin. Security
+headers lock down scripts, framing, and permissions site-wide. This
+is a real, layered defense for a small app — not a claim that it's
+immune to a determined attacker.
 
 Free OpenRouter models are third-party-hosted and not guaranteed
 available or private in the way a paid, contracted API is — avoid

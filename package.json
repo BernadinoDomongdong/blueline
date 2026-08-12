@@ -1,0 +1,11 @@
+{
+  "name": "blueline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local, rule-based data lineage for SSAS modernization projects. Paste SQL, DAX, or Power Query source; Blueline traces table- and column-level lineage with a real SQL parser (no AI, no API key) — or build the diagram by hand. Optional LLM-backed Q&A and reports on top.",
+  "author": "Bernadino T. Domongdong (https://bernadinodomongdong.github.io/mysite/)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
