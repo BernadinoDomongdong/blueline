@@ -32,6 +32,17 @@ const GLOBAL_RATE_LIMIT = {
  * @param {import('http').ServerResponse} res
  */
 module.exports = async function handler(req, res) {
+  try {
+    await handleReport(req, res);
+  } catch (err) {
+    console.error('Unhandled error in /api/report:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: `Unexpected server error (${err?.name || 'Error'}): ${err?.message || err}` });
+    }
+  }
+};
+
+async function handleReport(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
@@ -93,14 +104,13 @@ module.exports = async function handler(req, res) {
       return;
     }
     if (err instanceof LLMConfigError) {
-      res.status(500).json({ error: err.message });
+      res.status(400).json({ error: err.message });
       return;
     }
     if (err instanceof LLMUpstreamError) {
       res.status(err.status).json({ error: err.message });
       return;
     }
-    console.error('Unexpected error in /api/report:', err);
-    res.status(500).json({ error: 'Unexpected server error.' });
+    throw err; // re-thrown — caught by the outer guard above, which always returns a clean, specific response
   }
-};
+}

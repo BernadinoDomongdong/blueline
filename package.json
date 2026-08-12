@@ -6,6 +6,6 @@
   "author": "Bernadino T. Domongdong (https://bernadinodomongdong.github.io/mysite/)",
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": "24.x"
   }
 }
