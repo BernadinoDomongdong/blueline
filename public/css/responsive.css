@@ -1,0 +1,73 @@
+@media (max-width: 1100px) {
+  .app__body {
+    grid-template-columns: 260px 1fr 300px;
+  }
+}
+
+@media (max-width: 860px) {
+  .app__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 50vh auto;
+    overflow-y: auto;
+  }
+
+  .sidebar--sources,
+  .sidebar--inspector {
+    border: none;
+    border-bottom: 1px solid var(--hairline);
+    max-height: 340px;
+  }
+
+  .titleblock {
+    flex-wrap: wrap;
+    row-gap: var(--sp-2);
+  }
+
+  .titleblock__meta {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .titleblock__controls {
+    order: 2;
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  /* A vertical palette eats too much of an already-short mobile
+     canvas (the stacked layout gives it ~50vh) — lay it out
+     horizontally instead so it stays a thin strip. */
+  .palette {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: calc(100% - 2 * var(--sp-3));
+    align-items: center;
+  }
+
+  .palette__title {
+    padding: 0 var(--sp-1) 0 0;
+  }
+
+  .palette__item {
+    padding: var(--sp-1) var(--sp-2);
+  }
+
+  .legend {
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-3);
+    max-width: calc(100% - 2 * var(--sp-3));
+  }
+
+  .empty-state {
+    max-width: calc(100% - var(--sp-6));
+  }
+
+  .titleblock__brand {
+    font-size: var(--text-base);
+  }
+
+  .modal__body {
+    padding: var(--sp-3);
+  }
+}

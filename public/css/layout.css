@@ -1,0 +1,137 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Title block — echoes the stamp in the corner of a real engineering
+   drawing: brand, subject, and a live "revision" readout. */
+.titleblock {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--panel);
+  flex-shrink: 0;
+}
+
+.titleblock__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+
+.titleblock__mark {
+  color: var(--copper);
+}
+
+.titleblock__meta {
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  flex: 1;
+}
+
+.titleblock__stamp {
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--cyan);
+  border: 1px solid var(--cyan-dim);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-1) var(--sp-3);
+  white-space: nowrap;
+}
+
+.titleblock__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.digital-clock {
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+}
+
+.app__body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr 340px;
+  min-height: 0;
+  transition: grid-template-columns var(--motion-base) var(--ease);
+}
+
+/* Fullscreen mode: an in-app focus view for the diagram, not the
+   browser's native Fullscreen API — collapsing both sidebars to zero
+   width keeps the header/footer (and their Exit-fullscreen affordance)
+   reachable, and needs no permission prompt or platform quirks. */
+.app__body.is-fullscreen {
+  grid-template-columns: 0 1fr 0;
+}
+
+.app__body.is-fullscreen .sidebar {
+  padding: 0;
+  overflow: hidden;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.sidebar--sources {
+  border-right: 1px solid var(--hairline);
+  background: var(--panel);
+}
+
+.sidebar--inspector {
+  border-left: 1px solid var(--hairline);
+  background: var(--panel);
+  padding: 0;
+}
+
+.canvas-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.canvas-wrap--drop-active::after {
+  content: '';
+  position: absolute;
+  inset: var(--sp-2);
+  border: 2px dashed var(--copper);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 20;
+}
+
+
+.app-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-2) var(--sp-5);
+  border-top: 1px solid var(--hairline);
+  background: var(--panel);
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
