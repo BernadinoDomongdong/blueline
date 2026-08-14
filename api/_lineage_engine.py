@@ -42,6 +42,16 @@ MAX_EDGES = 1500
 
 ANSI_ESCAPE_RE = re.compile(r'\x1b\[[0-9;]*m')
 
+# SSMS's "Script Table/View/Proc as ..." output separates each batch with
+# a bare "GO" on its own line. That's a client-tool convention, not part
+# of T-SQL grammar, and sqlglot's tsql dialect only tolerates it between
+# exactly one pair of statements — a real script (USE ... / SET ... / SET
+# ... / CREATE ...) has several GO-separated batches back to back, and
+# sqlglot raises a ParseError on the second one. Splitting on GO lines
+# ourselves and parsing each batch independently avoids that; see
+# extract_sql_lineage below.
+_GO_BATCH_RE = re.compile(r'(?im)^[ \t]*GO[ \t]*$')
+
 
 # ── SQL (sqlglot) ────────────────────────────────────────────────────
 
@@ -147,14 +157,17 @@ def extract_sql_lineage(name, content):
     if sqlglot is None:
         warnings.append('SQL parsing is unavailable on this deployment (sqlglot did not load).')
         return nodes, edges, warnings
-    try:
-        statements = sqlglot.parse(content, read='tsql')
-    except ParseError as ex:
-        warnings.append(f'Could not parse "{name}" as SQL: {ANSI_ESCAPE_RE.sub("", str(ex))}')
-        return nodes, edges, warnings
-    except Exception as ex:
-        warnings.append(f'Could not parse "{name}" as SQL: {ex}')
-        return nodes, edges, warnings
+
+    batches = [b for b in _GO_BATCH_RE.split(content) if b.strip()] or [content]
+
+    statements = []
+    for batch in batches:
+        try:
+            statements.extend(sqlglot.parse(batch, read='tsql'))
+        except ParseError as ex:
+            warnings.append(f'Could not parse part of "{name}" as SQL: {ANSI_ESCAPE_RE.sub("", str(ex))}')
+        except Exception as ex:
+            warnings.append(f'Could not parse part of "{name}" as SQL: {ex}')
 
     for stmt in statements:
         if stmt is None:
