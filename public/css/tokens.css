@@ -1,0 +1,100 @@
+/**
+ * tokens.css — the one place every color, type, and spacing value in
+ * this app is defined. Nothing else in css/ hardcodes a color.
+ *
+ * Design concept: a cyanotype blueprint. Lineage IS tracing — a
+ * column's path from a raw table to a report, the way a blueprint
+ * traces a structure's load path. Confirmed lineage draws as a solid
+ * traced line; automatically-traced but not-yet-verified lineage
+ * draws dashed, the
+ * way an engineer pencils in a detail before it's checked — structure
+ * that means something, not decoration.
+ */
+
+:root {
+  /* Blueprint surfaces */
+  --bg: #0b2338;
+  --panel: #12304a;
+  --panel-raised: #163a59;
+  --grid-line: rgba(220, 238, 251, 0.07);
+  --hairline: rgba(220, 238, 251, 0.14);
+
+  /* Ink */
+  --ink: #e7f1f9;
+  --ink-dim: #86a0b8;
+  --ink-faint: #5b7590;
+
+  /* Accents */
+  --copper: #cf9752;
+  --copper-dim: rgba(207, 151, 82, 0.35);
+  --cyan: #5fc3e0;
+  --cyan-dim: rgba(95, 195, 224, 0.35);
+  --brick: #d97862;
+  --brick-dim: rgba(217, 120, 98, 0.3);
+
+  /* Confidence → color, used consistently across the graph, panels, and reports */
+  --confidence-high: var(--cyan);
+  --confidence-medium: var(--copper);
+  --confidence-low: var(--brick);
+
+  /* Type */
+  --font-display: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+
+  /* Spacing (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  --motion-fast: 120ms;
+  --motion-base: 220ms;
+  --motion-slow: 480ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
+
+/* Light theme — same blueprint concept, drafting-paper instead of
+   cyanotype: cream vellum background, navy ink, the same accent
+   hues deepened for contrast against a light surface. Toggled by
+   js/theme.js via data-theme on <html>; every other rule in this
+   app reads colors through the tokens above, so nothing outside
+   this block needs to know a light mode exists. */
+[data-theme='light'] {
+  --bg: #f5f1e8;
+  --panel: #fffdf8;
+  --panel-raised: #ffffff;
+  --grid-line: rgba(22, 50, 74, 0.06);
+  --hairline: rgba(22, 50, 74, 0.14);
+
+  --ink: #16324a;
+  --ink-dim: #4d6478;
+  --ink-faint: #7c8fa0;
+
+  --copper: #a8672a;
+  --copper-dim: rgba(168, 103, 42, 0.25);
+  --cyan: #1f7f9e;
+  --cyan-dim: rgba(31, 127, 158, 0.25);
+  --brick: #b8492f;
+  --brick-dim: rgba(184, 73, 47, 0.22);
+}

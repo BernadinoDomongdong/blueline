@@ -1,0 +1,445 @@
+/**
+ * graph.css — the lineage canvas: a hand-rolled pan/zoom viewport
+ * (panZoom.js) rendering plain DOM node "cards" and an SVG edge
+ * layer (canvas.js), replacing what used to be a single cytoscape
+ * canvas bitmap.
+ *
+ * No color is hardcoded here — every visual state (confidence, type,
+ * selection, dimming) reads a token from tokens.css via a class or
+ * data-* attribute, the same convention every other component in
+ * this app follows. That's what lets a dark/light theme switch
+ * (js/theme.js) repaint the whole diagram with zero JavaScript: it's
+ * just a CSS cascade change on <html data-theme>.
+ */
+
+.graph-canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* ── Component palette — unchanged: floats over the top-left of the
+   canvas, visible only while editing. Each swatch mirrors the actual
+   node shape it creates, so the palette doubles as a quick legend. ── */
+.palette {
+  position: absolute;
+  top: var(--sp-3);
+  left: var(--sp-3);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  background: rgba(11, 35, 56, 0.9);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2);
+  max-width: 160px;
+}
+
+.palette__title {
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-dim);
+  padding: 0 var(--sp-1);
+}
+
+.palette__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  color: var(--ink);
+  border: 1px dashed var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2);
+  cursor: grab;
+  background: var(--panel-raised);
+  transition: border-color var(--motion-fast) var(--ease), color var(--motion-fast) var(--ease);
+}
+
+.palette__item:hover {
+  border-color: var(--cyan-dim);
+  color: var(--cyan);
+}
+
+.palette__item:active {
+  cursor: grabbing;
+}
+
+.palette__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--cyan);
+  flex-shrink: 0;
+}
+
+.palette__swatch--table,
+.palette__swatch--view {
+  border-radius: 3px;
+}
+
+.palette__swatch--view {
+  border-style: dashed;
+}
+
+.palette__swatch--column {
+  border-radius: 50%;
+}
+
+.palette__swatch--measure {
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+/* ── Viewport, pan/zoom transform layer, grid ─────────────────────── */
+
+.lineage-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.lineage-viewport.is-panning {
+  cursor: grabbing;
+}
+
+.lineage-viewport.is-connecting {
+  cursor: crosshair;
+}
+
+.lineage-transform {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* A large, offset tile of the same blueprint grid the rest of the app
+   already draws on <body> (base.css) — panning the canvas pans this
+   grid with it, so the diagram reads as sitting "on" the blueprint
+   rather than floating over a plain panel. */
+.lineage-grid {
+  position: absolute;
+  left: -2500px;
+  top: -2500px;
+  width: 5000px;
+  height: 5000px;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+.lineage-edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible; /* paths draw anywhere in model space, unconstrained by the nominal 1x1 intrinsic size above */
+  pointer-events: none;
+}
+
+.lineage-nodes {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* ── Edges ─────────────────────────────────────────────────────────
+   Line style still encodes meaning, not decoration: solid =
+   high-confidence (confirmed) lineage, dashed = medium/low-confidence
+   (automatically-traced but not yet verified). See graph/graphView.js. */
+
+.lineage-edge {
+  fill: none;
+  stroke-width: 1.75;
+  opacity: 0.85;
+  transition: opacity var(--motion-fast) var(--ease), stroke-width var(--motion-fast) var(--ease);
+}
+
+.lineage-edge[data-confidence='high'] {
+  stroke: var(--confidence-high);
+}
+.lineage-edge[data-confidence='medium'] {
+  stroke: var(--confidence-medium);
+  stroke-dasharray: 6 4;
+}
+.lineage-edge[data-confidence='low'] {
+  stroke: var(--confidence-low);
+  stroke-dasharray: 6 4;
+}
+
+.lineage-edge.is-selected {
+  stroke-width: 3;
+  opacity: 1;
+}
+
+.lineage-edge.is-dimmed {
+  opacity: 0.12;
+}
+
+/* Invisible, wider twin of .lineage-edge — a 1.75px stroke is too
+   thin a target to reliably click, so hit-testing happens against
+   this instead while only the visible path is painted. */
+.lineage-edge__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 16;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.lineage-edge-dot {
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--ease);
+}
+.lineage-edge-dot[data-confidence='high'] {
+  fill: var(--confidence-high);
+}
+.lineage-edge-dot[data-confidence='medium'] {
+  fill: var(--confidence-medium);
+}
+.lineage-edge-dot[data-confidence='low'] {
+  fill: var(--confidence-low);
+}
+.lineage-edge-dot.is-dimmed {
+  opacity: 0.12;
+}
+
+.lineage-edge--preview {
+  stroke: var(--cyan);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  fill: none;
+  opacity: 0.9;
+}
+
+/* ── Node cards ────────────────────────────────────────────────────
+   Border color is the confidence indicator (unchanged convention
+   from the previous cytoscape styling); background/ink are the same
+   panel-raised surface every card/panel in the app uses. */
+
+.lineage-node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--panel-raised);
+  border: 2px solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18);
+  cursor: grab;
+  user-select: none;
+  transition: box-shadow var(--motion-fast) var(--ease), opacity var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease);
+}
+
+.lineage-node:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.26);
+}
+
+.lineage-node:active {
+  cursor: grabbing;
+}
+
+.lineage-node[data-confidence='high'] {
+  border-color: var(--confidence-high);
+}
+.lineage-node[data-confidence='medium'] {
+  border-color: var(--confidence-medium);
+}
+.lineage-node[data-confidence='low'] {
+  border-color: var(--confidence-low);
+}
+
+.lineage-node.is-selected {
+  border-width: 3px;
+  z-index: 4;
+}
+
+.lineage-node.is-expanded {
+  z-index: 5;
+}
+
+.lineage-node.is-dimmed {
+  opacity: 0.12;
+}
+
+.lineage-node.is-connect-target {
+  box-shadow: 0 0 0 3px var(--cyan-dim);
+}
+
+.lineage-node__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 30px;
+  padding: 0 var(--sp-2);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.lineage-node__glyph {
+  font-size: 12px;
+  color: var(--cyan);
+  flex-shrink: 0;
+}
+
+.lineage-node__title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lineage-node__expand {
+  flex-shrink: 0;
+  font-size: 9px;
+  color: var(--ink-faint);
+}
+
+.lineage-node__body {
+  padding: var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lineage-node__badge {
+  align-self: flex-start;
+  font-family: var(--font-data);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  border-radius: var(--radius-sm);
+  padding: 2px 5px;
+}
+
+.lineage-node__metric {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-family: var(--font-data);
+  font-size: 9px;
+  color: var(--ink-dim);
+}
+
+.lineage-node__metric b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.lineage-node__columns {
+  max-height: 260px;
+  overflow-y: auto;
+  border-top: 1px solid var(--hairline);
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.lineage-node__column {
+  font-family: var(--font-data);
+  font-size: 9px;
+  color: var(--ink-dim);
+  padding: 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lineage-node__column--more {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+/* Compact (column/measure) cards collapse to a single line — same
+   card shell, no header rule and no expandable body. */
+.lineage-node--compact .lineage-node__header {
+  height: 26px;
+  border-bottom: none;
+}
+.lineage-node--compact .lineage-node__title {
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+.lineage-node--compact .lineage-node__body {
+  display: none;
+}
+
+/* Connector handle — the drag-to-link hotspot, pinned to the right
+   edge. Hidden outside Connect mode so it can never intercept a
+   normal node-repositioning drag. */
+.lineage-node__handle {
+  display: none;
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--cyan);
+  border: 2px solid var(--bg);
+  cursor: crosshair;
+}
+
+.lineage-viewport.is-connecting .lineage-node__handle {
+  display: block;
+}
+
+/* ── Zoom controls ─────────────────────────────────────────────────
+   Bottom-right (the legend already occupies bottom-left — see
+   layout.css / index.html). */
+
+.lineage-zoom-controls {
+  position: absolute;
+  right: var(--sp-3);
+  bottom: var(--sp-3);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  background: var(--panel-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.24);
+}
+
+.lineage-zoom-controls__btn {
+  border: 0;
+  background: transparent;
+  width: 30px;
+  height: 30px;
+  font-size: 15px;
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-family: var(--font-data);
+}
+
+.lineage-zoom-controls__btn:hover {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.lineage-zoom-controls__label {
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+  padding: 0 var(--sp-2);
+  border-left: 1px solid var(--hairline);
+  border-right: 1px solid var(--hairline);
+  min-width: 40px;
+  text-align: center;
+}

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blueline — Local Data Lineage for SSAS Modernization</title>
+  <meta name="description" content="Paste SQL, DAX, or Power Query source and Blueline traces table- and column-level data lineage locally, with a real SQL parser — no AI, no API key — or build the diagram by hand. Optional AI-backed Q&A and reports on top." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="titleblock">
+      <div class="titleblock__brand">
+        <span class="titleblock__mark" aria-hidden="true">⌗</span>
+        <span>BLUELINE</span>
+      </div>
+      <div class="titleblock__meta">DATA LINEAGE FOR SSAS MODERNIZATION</div>
+      <div class="titleblock__stamp">
+        <span id="graphStamp">NO LINEAGE DRAWN</span>
+      </div>
+      <div class="titleblock__controls">
+        <time id="digitalClock" class="digital-clock" aria-label="Current time">--:--:--</time>
+        <button id="aiSettingsBtn" type="button" class="btn btn--ghost" title="Set up AI features (Ask AI, Reports)">AI: Off</button>
+        <button id="helpBtn" type="button" class="btn btn--icon" title="How to use Blueline">?</button>
+        <button id="themeToggle" type="button" class="btn btn--icon" aria-pressed="false" title="Switch to light mode">☀</button>
+      </div>
+    </header>
+
+    <div class="app__body">
+      <!-- Sources -->
+      <aside class="sidebar sidebar--sources" aria-label="Sources">
+        <h2 class="panel__title">Sources</h2>
+        <p class="panel__hint">Paste or upload SQL, DAX, or Power Query (M). Blueline traces lineage from what's here.</p>
+
+        <ul id="sourceList" class="source-list" aria-label="Added sources"></ul>
+
+        <form id="sourceForm" class="source-form">
+          <label class="field">
+            <span class="field__label">Name</span>
+            <input type="text" id="sourceName" placeholder="e.g. FactSales.sql" maxlength="200" />
+          </label>
+          <label class="field">
+            <span class="field__label">Dialect</span>
+            <select id="sourceDialect">
+              <option value="sql">SQL</option>
+              <option value="dax">DAX</option>
+              <option value="m">Power Query (M)</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">Query text</span>
+            <textarea id="sourceContent" rows="7" placeholder="Paste a query here, or drop a file below"></textarea>
+          </label>
+          <label class="btn btn--ghost btn--block file-btn">
+            <span>Upload file(s)</span>
+            <input type="file" id="sourceFile" multiple accept=".sql,.dax,.m,.txt" class="file-input" />
+          </label>
+          <button type="submit" class="btn btn--ghost btn--block">+ Add source</button>
+        </form>
+
+        <button id="inferBtn" class="btn btn--primary btn--block" disabled>Infer lineage</button>
+        <p id="inferStatus" class="status-line" role="status"></p>
+      </aside>
+
+      <!-- Graph canvas -->
+      <main class="canvas-wrap">
+        <div class="canvas-toolbar">
+          <div class="canvas-toolbar__group">
+            <button id="fitBtn" class="btn btn--icon" title="Fit graph to view" disabled>⤢</button>
+            <button id="clearHighlightBtn" class="btn btn--icon" title="Clear highlight" disabled>✕</button>
+            <button id="fullscreenBtn" class="btn btn--icon" aria-pressed="false" title="Fullscreen the diagram">⛶</button>
+          </div>
+          <div class="canvas-toolbar__group">
+            <button id="editModeToggle" class="btn btn--ghost" aria-pressed="false" title="Add, connect, and delete nodes by hand">✎ Edit diagram</button>
+            <span id="editToolGroup" class="canvas-toolbar__group" hidden>
+              <button id="addNodeBtn" class="btn btn--ghost" title="Add a node">+ Node</button>
+              <button id="addEdgeBtn" class="btn btn--ghost" title="Add an edge by choosing source and target" disabled>+ Edge</button>
+              <button id="connectModeBtn" class="btn btn--ghost" aria-pressed="false" title="Drag from one node to another to connect them">⤳ Connect</button>
+              <button id="deleteElementBtn" class="btn btn--ghost" title="Delete the selected node or edge" disabled>Delete</button>
+            </span>
+          </div>
+          <div class="canvas-toolbar__group">
+            <button id="exportJsonBtn" class="btn btn--ghost" disabled>Export JSON</button>
+            <button id="exportCsvBtn" class="btn btn--ghost" disabled>Export CSV</button>
+            <button id="exportPngBtn" class="btn btn--ghost" disabled>Export PNG</button>
+            <label class="btn btn--ghost file-btn">
+              <span>Import JSON</span>
+              <input type="file" id="importInput" accept="application/json" class="file-input" />
+            </label>
+          </div>
+        </div>
+
+        <p id="editModeHint" class="edit-mode-hint" hidden>
+          Editing on — drag a node to reposition it, double-click a node or edge to change it, or use Connect to drag a link between two nodes. Select something and press Delete to remove it (undoable).
+        </p>
+
+        <div id="graphCanvas" class="graph-canvas" role="img" aria-label="Data lineage graph">
+          <div id="componentPalette" class="palette" hidden aria-label="Add a component — drag onto the canvas, or click to add">
+            <div class="palette__title">Add</div>
+            <div class="palette__item" draggable="true" data-node-type="table" title="Drag onto the canvas, or click to add">
+              <span class="palette__swatch palette__swatch--table"></span>Table
+            </div>
+            <div class="palette__item" draggable="true" data-node-type="view" title="Drag onto the canvas, or click to add">
+              <span class="palette__swatch palette__swatch--view"></span>View
+            </div>
+            <div class="palette__item" draggable="true" data-node-type="column" title="Drag onto the canvas, or click to add">
+              <span class="palette__swatch palette__swatch--column"></span>Column
+            </div>
+            <div class="palette__item" draggable="true" data-node-type="measure" title="Drag onto the canvas, or click to add">
+              <span class="palette__swatch palette__swatch--measure"></span>Measure
+            </div>
+          </div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          <p class="empty-state__title">No lineage drawn yet</p>
+          <p class="empty-state__body">Add a source query on the left and click "Infer lineage," import a saved graph, or build one by hand.</p>
+          <div class="empty-state__actions">
+            <button id="emptyStateDemoBtn" class="btn btn--primary">▶ Load demo</button>
+            <button id="emptyStateManualBtn" class="btn btn--ghost">+ Start a manual diagram</button>
+          </div>
+        </div>
+
+        <div class="legend" aria-hidden="true">
+          <span class="legend__item"><i class="legend__swatch legend__swatch--high"></i>Confirmed</span>
+          <span class="legend__item"><i class="legend__swatch legend__swatch--medium"></i>Medium confidence</span>
+          <span class="legend__item"><i class="legend__swatch legend__swatch--low"></i>Low confidence</span>
+        </div>
+      </main>
+
+      <!-- Inspector / Ask / Report -->
+      <aside class="sidebar sidebar--inspector" aria-label="Inspector, Ask AI, and Reports">
+        <div class="tabs" role="tablist">
+          <button class="tab is-active" data-tab="inspector" role="tab" aria-selected="true">Inspect</button>
+          <button class="tab" data-tab="ask" role="tab" aria-selected="false">Ask AI</button>
+          <button class="tab" data-tab="report" role="tab" aria-selected="false">Reports</button>
+        </div>
+
+        <div class="tab-panel is-active" data-tab-panel="inspector">
+          <div id="inspectorContent" class="inspector">
+            <p class="empty-hint">Click a node in the graph to inspect its upstream and downstream lineage.</p>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="ask">
+          <div id="chatLog" class="chat-log" role="log" aria-live="polite">
+            <p class="empty-hint">Ask a question about the current lineage graph — e.g. "what feeds TotalRevenue?"</p>
+          </div>
+          <form id="chatForm" class="chat-form">
+            <textarea id="chatInput" rows="2" placeholder="Ask about this lineage graph…" maxlength="1000"></textarea>
+            <button type="submit" class="btn btn--primary">Ask</button>
+          </form>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="report">
+          <div class="report-actions">
+            <button id="docReportBtn" class="btn btn--ghost btn--block" disabled>Generate documentation</button>
+            <button id="impactReportBtn" class="btn btn--ghost btn--block" disabled>Generate impact analysis</button>
+          </div>
+          <p id="reportStatus" class="status-line" role="status"></p>
+          <div id="reportOutput" class="report-output"></div>
+          <button id="downloadReportBtn" class="btn btn--ghost btn--block" hidden>Download report (.md)</button>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="app-footer">
+      <span>Blueline — created by Bernadino T. Domongdong</span>
+      <span id="modelStamp" class="app-footer__model"></span>
+      <a href="https://bernadinodomongdong.github.io/mysite/" target="_blank" rel="noopener">bernadinodomongdong.github.io/mysite</a>
+    </footer>
+  </div>
+
+  <div id="editModal" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <div class="modal__header">
+        <h3 id="editModalTitle">Edit</h3>
+        <button type="button" id="editModalClose" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+      <div id="editModalBody" class="modal__body"></div>
+    </div>
+  </div>
+
+  <div id="helpModal" class="modal-overlay" hidden>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+      <div class="modal__header">
+        <h3 id="helpModalTitle">How to use Blueline</h3>
+        <button type="button" id="helpModalClose" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="report-output">
+          <h4>1. Get lineage onto the canvas</h4>
+          <p>Two ways to start: paste or upload SQL, DAX, or Power Query (M) in the <strong>Sources</strong> panel on the left and click <strong>Infer lineage</strong> — parsed locally, no AI, no API key. Or click <strong>▶ Load demo</strong> on the empty canvas to see a worked example first.</p>
+
+          <h4>2. Build or edit it by hand</h4>
+          <p>Turn on <strong>✎ Edit diagram</strong> to reveal the editing tools:</p>
+          <ul>
+            <li><strong>Palette</strong> (top-left of the canvas) — drag a Table, View, Column, or Measure onto the canvas to drop it exactly there, or click a chip to add one at the center of the current view.</li>
+            <li><strong>+ Node</strong> / <strong>+ Edge</strong> — add either through a form instead, if you'd rather type it in directly.</li>
+            <li><strong>⇄ Connect</strong> — drag from one node straight to another to link them. A small handle appears on hover; drag from that handle to the target node.</li>
+            <li><strong>Double-click</strong> any node or edge to edit its details, or <strong>select it and press Delete</strong> to remove it — every delete offers a one-tap Undo.</li>
+          </ul>
+
+          <h4>3. Read the diagram</h4>
+          <p>A <strong>solid</strong> line means high-confidence lineage (resolved from a real SQL parse, or entered by hand). A <strong>dashed</strong> line means medium or low confidence (DAX/M pattern-matching, or an ambiguous unqualified column) — worth a second look. Click any node to see exactly what feeds it and what it feeds, in the <strong>Inspect</strong> tab.</p>
+
+          <h4>4. Ask questions and generate reports (optional)</h4>
+          <p>The <strong>Ask AI</strong> and <strong>Reports</strong> tabs are grounded in whatever graph is currently on the canvas. They need an AI provider configured — click <strong>AI: Off</strong> in the header to bring your own API key (Anthropic, OpenRouter, or your own custom endpoint), stored only in your browser and used only for your own requests. Without one set up, both tabs say so plainly and the rest of the app is unaffected.</p>
+
+          <h4>5. Save your work</h4>
+          <p>Use the canvas toolbar to <strong>Export JSON</strong> (round-trips back in later, or hand off to a teammate — preserves your manual layout), <strong>Export CSV</strong> (the edge list, for a spreadsheet), <strong>Export PNG</strong> (a snapshot), or <strong>Import JSON</strong> to load a saved graph back in.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="aiSettingsModal" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="aiSettingsTitle">
+      <div class="modal__header">
+        <h3 id="aiSettingsTitle">AI settings</h3>
+        <button type="button" id="aiSettingsClose" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+      <div class="modal__body">
+        <p class="panel__hint">
+          Powers the optional <strong>Ask AI</strong> and <strong>Reports</strong> tabs only —
+          lineage extraction never uses AI. Stored in this browser only
+          (never on a server); sent straight to the provider you pick,
+          per request, and nowhere else.
+        </p>
+        <form id="aiSettingsForm" class="modal-form">
+          <label class="field">
+            <span class="field__label">Provider</span>
+            <select id="aiProvider">
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="openrouter">OpenRouter</option>
+              <option value="custom">Custom endpoint (Ollama, LM Studio, your own gateway)</option>
+            </select>
+          </label>
+          <label class="field" id="aiBaseUrlField" hidden>
+            <span class="field__label">Base URL</span>
+            <input type="text" id="aiBaseUrl" placeholder="e.g. http://localhost:11434/v1" />
+          </label>
+          <label class="field">
+            <span class="field__label">API key<span id="aiKeyOptionalHint"></span></span>
+            <input type="password" id="aiApiKey" autocomplete="off" placeholder="Pasted here, sent only to the provider you picked" />
+          </label>
+          <label class="field">
+            <span class="field__label">Model <span class="field__label field__label--plain">(optional — leave blank for a sensible default)</span></span>
+            <input type="text" id="aiModel" placeholder="e.g. claude-sonnet-5" />
+          </label>
+          <div class="inspector__actions">
+            <button type="submit" class="btn btn--primary">Save</button>
+            <button type="button" id="aiSettingsClear" class="btn btn--danger">Clear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastRegion" class="toast-region" aria-live="assertive"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
